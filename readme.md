@@ -4,7 +4,7 @@
 
 Chatternel is a lightweight, single-file HTML application that lets you chat with any model available on OpenRouter directly from your browser. No backend, no databases, no tracking—just you and the model.
 
-🌐 **Try it live:** [chatternel.com](https://chatternel.com)
+🌐 **Try it live:** [noniv.github.io/Chatternel](https://noniv.github.io/Chatternel/)
 
 ---
 
