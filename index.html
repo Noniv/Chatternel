@@ -442,7 +442,6 @@
 
 			.msg-reasoning {
 				margin-bottom: 8px;
-				padding: 8px 12px;
 				background: var(--bg-3);
 				border-left: 2px solid var(--border-hi);
 				border-radius: 0 var(--radius) var(--radius) 0;
@@ -453,6 +452,17 @@
 				white-space: pre-wrap;
 				word-break: break-word;
 			}
+			.msg-reasoning-header {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				padding: 8px 12px;
+				cursor: pointer;
+				user-select: none;
+			}
+			.msg-reasoning-header:active {
+				opacity: 0.7;
+			}
 			.msg-reasoning-label {
 				display: block;
 				font-style: normal;
@@ -461,8 +471,29 @@
 				letter-spacing: 0.1em;
 				text-transform: uppercase;
 				color: var(--ink-muted);
-				margin-bottom: 4px;
 				opacity: 0.8;
+				flex: 1;
+			}
+			.msg-reasoning-chevron {
+				font-style: normal;
+				font-size: 9px;
+				color: var(--ink-muted);
+				opacity: 0.6;
+				transition: transform 0.2s ease;
+				flex-shrink: 0;
+			}
+			.msg-reasoning.collapsed .msg-reasoning-chevron {
+				transform: rotate(-90deg);
+			}
+			.msg-reasoning-content {
+				padding: 0 12px 8px;
+				overflow: hidden;
+			}
+			.msg-reasoning.collapsed .msg-reasoning-content {
+				display: none;
+			}
+			.msg-reasoning.streaming .msg-reasoning-header {
+				cursor: default;
 			}
 
 			.msg-edit-box {
@@ -1176,7 +1207,8 @@
 			const MIN_REASONING_TOKENS = 1024;
 			const WEEK_MS = 6 * 86400e3;
 
-			const REASONING_LABEL = '<span class="msg-reasoning-label">Reasoning</span>';
+			const REASONING_LABEL = '<div class="msg-reasoning-header"><span class="msg-reasoning-label">Reasoning</span><span class="msg-reasoning-chevron">▾</span></div><div class="msg-reasoning-content">';
+			const REASONING_CLOSE = '</div>';
 			const TYPING_INDICATOR = '<div class="typing-ind"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
 			const EMPTY_STATE_HTML = `
         <div class="empty-state">
@@ -1434,7 +1466,7 @@
 				const actionBtn = isUser ? '<button class="msg-btn" data-action="edit">EDIT</button>' : '<button class="msg-btn" data-action="redo">↺ REDO</button>';
 
 				const showReasoning = msg.role === "assistant" && msg.reasoning && !store.settings.reasoningExclude;
-				const reasoningHtml = showReasoning ? `<div class="msg-reasoning">${REASONING_LABEL}${renderMarkdown(msg.reasoning)}</div>` : "";
+				const reasoningHtml = showReasoning ? `<div class="msg-reasoning collapsed">${REASONING_LABEL}${renderMarkdown(msg.reasoning)}${REASONING_CLOSE}</div>` : "";
 
 				div.innerHTML = `
           <div class="msg-head">
@@ -1605,11 +1637,11 @@
 				let reasoningEl = msgEl.querySelector(".msg-reasoning");
 				if (!reasoningEl) {
 					reasoningEl = document.createElement("div");
-					reasoningEl.className = "msg-reasoning";
-					reasoningEl.innerHTML = REASONING_LABEL;
+					reasoningEl.className = "msg-reasoning streaming";
+					reasoningEl.innerHTML = REASONING_LABEL + REASONING_CLOSE;
 					msgEl.insertBefore(reasoningEl, bodyEl);
 				}
-				return reasoningEl;
+				return reasoningEl.querySelector(".msg-reasoning-content");
 			}
 
 			function parseStreamLine(line) {
@@ -1678,7 +1710,7 @@
 							}
 							if (delta.reasoning && stream.reasoning) {
 								reasoning += delta.reasoning;
-								stream.reasoning.innerHTML = REASONING_LABEL + renderMarkdown(reasoning);
+								stream.reasoning.innerHTML = renderMarkdown(reasoning);
 							}
 							scrollBottom();
 						}
@@ -1699,6 +1731,14 @@
 				convo.messages[index].reasoning = reasoning;
 				convo.updatedAt = Date.now();
 				persist();
+
+				if (stream.reasoning) {
+					const reasoningEl = stream.reasoning.closest(".msg-reasoning");
+					if (reasoningEl) {
+						reasoningEl.classList.remove("streaming");
+						reasoningEl.classList.add("collapsed");
+					}
+				}
 
 				stream.active = false;
 				stream.controller = null;
@@ -1856,6 +1896,12 @@
 				});
 
 				dom.msgs.addEventListener("click", (event) => {
+					const reasoningHeader = event.target.closest(".msg-reasoning-header");
+					if (reasoningHeader) {
+						const reasoningEl = reasoningHeader.closest(".msg-reasoning");
+						if (reasoningEl && !reasoningEl.classList.contains("streaming")) reasoningEl.classList.toggle("collapsed");
+						return;
+					}
 					const btn = event.target.closest("[data-action]");
 					if (!btn) return;
 					const index = Number(btn.closest(".msg").dataset.idx);
