@@ -234,7 +234,7 @@
 				color: var(--red);
 				background: var(--red-dim);
 			}
-			.empty-state {
+			.open-state {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -1468,11 +1468,23 @@
 				const showReasoning = msg.role === "assistant" && msg.reasoning && !store.settings.reasoningExclude;
 				const reasoningHtml = showReasoning ? `<div class="msg-reasoning collapsed">${REASONING_LABEL}${renderMarkdown(msg.reasoning)}${REASONING_CLOSE}</div>` : "";
 
+				let paginationHtml = "";
+				if (!isUser && msg.alternatives && msg.alternatives.length > 1) {
+					paginationHtml = `
+						<button class="msg-btn" data-action="prev-alt">‹</button>
+						<span style="font-size: 11px; color: var(--ink-muted); align-self: center; min-width: 22px; text-align: center; font-family: monospace;">${msg.activeIdx + 1}/${msg.alternatives.length}</span>
+						<button class="msg-btn" data-action="next-alt">›</button>
+					`;
+				}
+
 				div.innerHTML = `
           <div class="msg-head">
             <span class="msg-label">${label}</span>
             <span class="msg-rule"></span>
-            <div class="msg-btns">${actionBtn}</div>
+            <div class="msg-btns">
+              ${paginationHtml}
+              ${actionBtn}
+            </div>
           </div>
           ${reasoningHtml}
           <div class="msg-body">${renderMarkdown(msg.content)}</div>
@@ -1559,11 +1571,36 @@
 				const convo = currentConvo();
 				if (!convo) return;
 
-				convo.messages = convo.messages.slice(0, index);
+				convo.messages = convo.messages.slice(0, index + 1);
 				convo.updatedAt = Date.now();
 				persist();
+				generate(index);
+			}
+
+			function prevAlternative(index) {
+				const convo = currentConvo();
+				if (!convo) return;
+				const msg = convo.messages[index];
+				if (!msg || !msg.alternatives || msg.activeIdx <= 0) return;
+
+				msg.activeIdx--;
+				msg.content = msg.alternatives[msg.activeIdx].content;
+				msg.reasoning = msg.alternatives[msg.activeIdx].reasoning;
+				persist();
 				renderMessages();
-				generate();
+			}
+
+			function nextAlternative(index) {
+				const convo = currentConvo();
+				if (!convo) return;
+				const msg = convo.messages[index];
+				if (!msg || !msg.alternatives || msg.activeIdx >= msg.alternatives.length - 1) return;
+
+				msg.activeIdx++;
+				msg.content = msg.alternatives[msg.activeIdx].content;
+				msg.reasoning = msg.alternatives[msg.activeIdx].reasoning;
+				persist();
+				renderMessages();
 			}
 
 			function sendMessage() {
@@ -1605,9 +1642,10 @@
 				return (reasoningEffort || hasTokens) && !reasoningExclude;
 			}
 
-			function buildRequestBody(convo) {
+			function buildRequestBody(convo, targetIndex = null) {
 				const { settings } = store;
-				const history = convo.messages.slice(0, -1).map(({ role, content }) => ({ role, content }));
+				const endIdx = targetIndex !== null ? targetIndex : convo.messages.length - 1;
+				const history = convo.messages.slice(0, endIdx).map(({ role, content }) => ({ role, content }));
 				const messages = settings.systemPrompt ? [{ role: "system", content: settings.systemPrompt }, ...history] : history;
 
 				const body = {
@@ -1631,8 +1669,12 @@
 				return body;
 			}
 
-			function setupReasoningElement(msgEl, bodyEl) {
-				if (!reasoningEnabled()) return null;
+			function ensureReasoningEl() {
+				if (stream.reasoning) return;
+				const bodyEl = stream.body;
+				if (!bodyEl) return;
+				const msgEl = bodyEl.parentElement;
+				if (!msgEl) return;
 
 				let reasoningEl = msgEl.querySelector(".msg-reasoning");
 				if (!reasoningEl) {
@@ -1641,7 +1683,7 @@
 					reasoningEl.innerHTML = REASONING_LABEL + REASONING_CLOSE;
 					msgEl.insertBefore(reasoningEl, bodyEl);
 				}
-				return reasoningEl.querySelector(".msg-reasoning-content");
+				stream.reasoning = reasoningEl.querySelector(".msg-reasoning-content");
 			}
 
 			function parseStreamLine(line) {
@@ -1672,6 +1714,8 @@
 				let content = "";
 				let reasoning = "";
 				let errored = false;
+				let insideThink = false;
+				let thinkBuffer = "";
 
 				try {
 					const response = await fetch(API_URL, {
@@ -1704,15 +1748,86 @@
 							const delta = parseStreamLine(line);
 							if (!delta) continue;
 
-							if (delta.content) {
-								content += delta.content;
-								if (stream.body) stream.body.innerHTML = renderMarkdown(content);
-							}
-							if (delta.reasoning && stream.reasoning) {
+							if (delta.reasoning) {
 								reasoning += delta.reasoning;
-								stream.reasoning.innerHTML = renderMarkdown(reasoning);
+								ensureReasoningEl();
+								if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
+							}
+
+							if (delta.content) {
+								thinkBuffer += delta.content;
+
+								while (thinkBuffer.length > 0) {
+									if (!insideThink) {
+										let idx = thinkBuffer.indexOf("<think>");
+										if (idx !== -1) {
+											content += thinkBuffer.slice(0, idx);
+											thinkBuffer = thinkBuffer.slice(idx + 7);
+											insideThink = true;
+										} else {
+											let partialMatch = false;
+											for (let i = 1; i < 7; i++) {
+												if (thinkBuffer.endsWith("<think>".slice(0, i))) {
+													let safeLen = thinkBuffer.length - i;
+													content += thinkBuffer.slice(0, safeLen);
+													thinkBuffer = thinkBuffer.slice(safeLen);
+													partialMatch = true;
+													break;
+												}
+											}
+											if (!partialMatch) {
+												content += thinkBuffer;
+												thinkBuffer = "";
+											}
+											break;
+										}
+									} else {
+										let idx = thinkBuffer.indexOf("</think>");
+										if (idx !== -1) {
+											reasoning += thinkBuffer.slice(0, idx);
+											thinkBuffer = thinkBuffer.slice(idx + 8);
+											insideThink = false;
+										} else {
+											let partialMatch = false;
+											for (let i = 1; i < 8; i++) {
+												if (thinkBuffer.endsWith("</think>".slice(0, i))) {
+													let safeLen = thinkBuffer.length - i;
+													reasoning += thinkBuffer.slice(0, safeLen);
+													thinkBuffer = thinkBuffer.slice(safeLen);
+													partialMatch = true;
+													break;
+												}
+											}
+											if (!partialMatch) {
+												reasoning += thinkBuffer;
+												thinkBuffer = "";
+											}
+											break;
+										}
+									}
+								}
+
+								if (stream.body) stream.body.innerHTML = content ? renderMarkdown(content) : TYPING_INDICATOR;
+								if (reasoning) {
+									ensureReasoningEl();
+									if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
+								}
 							}
 							scrollBottom();
+						}
+					}
+
+					if (thinkBuffer.length > 0) {
+						if (insideThink) {
+							reasoning += thinkBuffer;
+						} else {
+							content += thinkBuffer;
+						}
+						thinkBuffer = "";
+						if (stream.body) stream.body.innerHTML = content ? renderMarkdown(content) : "";
+						if (reasoning) {
+							ensureReasoningEl();
+							if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
 						}
 					}
 				} catch (err) {
@@ -1727,8 +1842,16 @@
 
 			function finalizeGeneration(convo, index, { content, reasoning, errored }) {
 				const fallback = errored ? "[Error — check your API key and model ID]" : "[No response]";
-				convo.messages[index].content = content || fallback;
-				convo.messages[index].reasoning = reasoning;
+				const finalContent = content || fallback;
+
+				const msg = convo.messages[index];
+				msg.content = finalContent;
+				msg.reasoning = reasoning;
+
+				if (msg.alternatives) {
+					msg.alternatives[msg.activeIdx] = { content: finalContent, reasoning: reasoning };
+				}
+
 				convo.updatedAt = Date.now();
 				persist();
 
@@ -1752,7 +1875,7 @@
 				renderHome();
 			}
 
-			async function generate() {
+			async function generate(targetIndex = null) {
 				if (stream.active) return;
 
 				const convo = currentConvo();
@@ -1763,21 +1886,36 @@
 				stream.controller = new AbortController();
 				setSendBtnState("stop");
 
-				const placeholder = { role: "assistant", content: "", reasoning: "" };
-				convo.messages.push(placeholder);
-				const index = convo.messages.length - 1;
+				let index;
+				if (targetIndex !== null) {
+					index = targetIndex;
+					const msg = convo.messages[index];
+					if (!msg.alternatives) {
+						msg.alternatives = [{ content: msg.content, reasoning: msg.reasoning }];
+						msg.activeIdx = 0;
+					}
+					msg.alternatives.push({ content: "", reasoning: "" });
+					msg.activeIdx = msg.alternatives.length - 1;
+					msg.content = "";
+					msg.reasoning = "";
+				} else {
+					const placeholder = { role: "assistant", content: "", reasoning: "" };
+					convo.messages.push(placeholder);
+					index = convo.messages.length - 1;
+				}
 				persist();
 
-				const msgEl = buildMsgEl(placeholder, index);
-				dom.msgs.appendChild(msgEl);
+				renderMessages();
+				scrollBottom();
+
+				const msgEl = getMsgEl(index);
 				const bodyEl = msgEl.querySelector(".msg-body");
 				bodyEl.innerHTML = TYPING_INDICATOR;
 
 				stream.body = bodyEl;
-				stream.reasoning = setupReasoningElement(msgEl, bodyEl);
-				scrollBottom();
+				stream.reasoning = null;
 
-				const result = await streamCompletion(buildRequestBody(convo));
+				const result = await streamCompletion(buildRequestBody(convo, targetIndex !== null ? index : null));
 				finalizeGeneration(convo, index, result);
 			}
 
@@ -1869,6 +2007,8 @@
 				redo: regenerateFrom,
 				"save-edit": saveEdit,
 				"cancel-edit": cancelEdit,
+				"prev-alt": prevAlternative,
+				"next-alt": nextAlternative,
 			};
 
 			function wireEvents() {
