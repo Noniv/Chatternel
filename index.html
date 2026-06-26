@@ -234,7 +234,7 @@
 				color: var(--red);
 				background: var(--red-dim);
 			}
-			.open-state {
+			.open-state, .empty-state {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -1032,6 +1032,105 @@
 				pointer-events: none;
 				z-index: 0;
 			}
+
+			.btn:disabled {
+				opacity: 0.36;
+				cursor: not-allowed;
+			}
+			.btn:disabled:active {
+				transform: none;
+			}
+			.btn-danger:disabled:active {
+				background: var(--red-dim);
+			}
+			.btn-ghost:disabled:active {
+				background: var(--surface);
+			}
+
+			/* ── Summarise modal ── */
+			#summ-mask {
+				position: fixed;
+				inset: 0;
+				background: rgba(0, 0, 0, 0.55);
+				z-index: 200;
+				opacity: 0;
+				pointer-events: none;
+				transition: opacity 0.3s;
+				backdrop-filter: blur(2px);
+			}
+			#summ-mask.open {
+				opacity: 1;
+				pointer-events: all;
+			}
+			#summ-sheet {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				background: var(--bg-2);
+				border-top: 1px solid var(--border);
+				border-radius: 18px 18px 0 0;
+				z-index: 201;
+				display: flex;
+				flex-direction: column;
+				max-height: 92vh;
+				transform: translateY(100%);
+				transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+			}
+			#summ-sheet.open {
+				transform: translateY(0);
+			}
+			.summ-body {
+				overflow-y: auto;
+				padding: 18px 18px calc(18px + var(--safe-bottom));
+				display: flex;
+				flex-direction: column;
+				gap: 14px;
+				scrollbar-width: thin;
+				scrollbar-color: var(--border) transparent;
+			}
+			.summ-body::-webkit-scrollbar { width: 3px; }
+			.summ-body::-webkit-scrollbar-thumb { background: var(--border); }
+			.summ-hint {
+				font-size: 12.5px;
+				color: var(--ink-muted);
+				font-style: italic;
+				line-height: 1.65;
+			}
+			.summ-textarea {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: var(--radius);
+				padding: 10px 13px;
+				color: var(--ink);
+				font-size: 14px;
+				line-height: 1.55;
+				outline: none;
+				resize: vertical;
+				width: 100%;
+				transition: border-color 0.2s;
+				font-family: var(--body);
+			}
+			.summ-textarea:focus { border-color: var(--gold-dim); }
+			.summ-actions {
+				display: flex;
+				gap: 8px;
+			}
+			.summ-step {
+				display: none;
+				flex-direction: column;
+				gap: 14px;
+			}
+			.summ-step.active { display: flex; }
+			#summ-generating {
+				display: none;
+				align-items: center;
+				gap: 10px;
+				padding: 4px 0;
+				font-size: 13px;
+				color: var(--ink-muted);
+				font-style: italic;
+			}
 		</style>
 	</head>
 	<body>
@@ -1189,11 +1288,47 @@
 
 					<div class="divider"></div>
 
+					<button class="btn btn-ghost btn-full" id="summarise-convo-btn">✦ SUMMARISE CONVERSATION</button>
 					<button class="btn btn-danger btn-full" id="clear-convo-btn">CLEAR CONVERSATION</button>
 				</div>
 			</div>
 
 			<div id="toast" aria-live="polite"></div>
+
+			<!-- Summarise modal -->
+			<div id="summ-mask"></div>
+			<div id="summ-sheet" role="dialog" aria-label="Summarise Conversation">
+				<div class="sheet-pip"></div>
+				<div class="sheet-header">
+					<span class="sheet-title" id="summ-sheet-title">SUMMARISE CONVERSATION</span>
+					<button class="sheet-close" id="summ-close" aria-label="Close">×</button>
+				</div>
+				<div class="summ-body">
+					<!-- Step 1: configure prompt -->
+					<div class="summ-step active" id="summ-step-1">
+						<p class="summ-hint">A summary will be generated using the instruction below, then appended to your system prompt. The conversation will be condensed to only its last few messages.</p>
+						<textarea class="summ-textarea" id="summ-prompt-textarea" rows="8" spellcheck="true"></textarea>
+						<div class="summ-actions">
+							<button class="btn btn-ghost" id="summ-cancel-btn" style="flex:1">CANCEL</button>
+							<button class="btn btn-gold" id="summ-generate-btn" style="flex:2">GENERATE SUMMARY →</button>
+						</div>
+					</div>
+					<!-- Step 2: review & confirm -->
+					<div class="summ-step" id="summ-step-2">
+						<p class="summ-hint">Review and edit the summary below. Confirming will clear the conversation (keeping the last 2 messages) and append this summary to your system prompt.</p>
+						<div id="summ-generating">
+							<div class="typing-ind"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+							<span>Generating summary…</span>
+						</div>
+						<textarea class="summ-textarea" id="summ-result-textarea" rows="12" placeholder="Summary will appear here…" spellcheck="true"></textarea>
+						<div class="summ-actions">
+							<button class="btn btn-ghost btn-sm" id="summ-back-btn">← BACK</button>
+							<button class="btn btn-ghost btn-sm" id="summ-regen-btn" style="flex:1">↺ REGENERATE</button>
+							<button class="btn btn-gold btn-sm" id="summ-confirm-btn" style="flex:2">✓ CONFIRM</button>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<script>
@@ -1463,7 +1598,9 @@
 
 				const isUser = msg.role === "user";
 				const label = isUser ? "YOU" : "AI";
-				const actionBtn = isUser ? '<button class="msg-btn" data-action="edit">EDIT</button>' : '<button class="msg-btn" data-action="redo">↺ REDO</button>';
+				const actionBtn = isUser
+					? '<button class="msg-btn" data-action="edit">EDIT</button>'
+					: '<button class="msg-btn" data-action="edit">EDIT</button><button class="msg-btn" data-action="redo">↺ REDO</button>';
 
 				const showReasoning = msg.role === "assistant" && msg.reasoning && !store.settings.reasoningExclude;
 				const reasoningHtml = showReasoning ? `<div class="msg-reasoning collapsed">${REASONING_LABEL}${renderMarkdown(msg.reasoning)}${REASONING_CLOSE}</div>` : "";
@@ -1558,13 +1695,26 @@
 				const text = msgEl.querySelector(".msg-edit-box").value.trim();
 				if (!text) return;
 
-				convo.messages[index].content = text;
-				convo.messages = convo.messages.slice(0, index + 1);
+				const msg = convo.messages[index];
+				msg.content = text;
 				convo.updatedAt = Date.now();
-				persist();
-				renderMessages();
-				scrollBottom();
-				generate();
+
+				if (msg.role === "user") {
+					convo.messages = convo.messages.slice(0, index + 1);
+					persist();
+					renderMessages();
+					scrollBottom();
+					generate();
+				} else {
+					// Assistant edit: just save, no regeneration
+					if (msg.alternatives) {
+						msg.alternatives[msg.activeIdx] = { content: text, reasoning: msg.reasoning };
+					}
+					persist();
+					renderMessages();
+					scrollBottom();
+					showToast("Response edited ✦");
+				}
 			}
 
 			function regenerateFrom(index) {
@@ -1964,6 +2114,7 @@
 
 				dom.settingsMask.classList.add("open");
 				dom.settingsSheet.classList.add("open");
+				updateConvoButtons();
 			}
 
 			function closeSettings() {
@@ -2011,7 +2162,148 @@
 				"next-alt": nextAlternative,
 			};
 
+			function updateConvoButtons() {
+				const hasConvo = !!currentConvo();
+				id("clear-convo-btn").disabled = !hasConvo;
+				id("summarise-convo-btn").disabled = !hasConvo;
+			}
+
+			// ── Summarise ──────────────────────────────────────────────────────
+			const DEFAULT_SUMM_PROMPT =
+				`Please create a detailed summary of this conversation to use as context in future sessions. Cover:\n- The main topics, questions, and goals discussed\n- Key decisions, conclusions, and answers reached\n- Important facts, code, or technical details mentioned\n- Anything a future session would need to continue seamlessly\n\nBe thorough but concise. Write in third person as context for an AI assistant.`;
+
+			let summController = null;
+
+			function openSummary() {
+				const convo = currentConvo();
+				if (!convo) return;
+				closeSettings();
+				id("summ-prompt-textarea").value = DEFAULT_SUMM_PROMPT;
+				id("summ-result-textarea").value = "";
+				showSummStep(1);
+				id("summ-mask").classList.add("open");
+				id("summ-sheet").classList.add("open");
+			}
+
+			function closeSummary() {
+				id("summ-mask").classList.remove("open");
+				id("summ-sheet").classList.remove("open");
+				if (summController) { summController.abort(); summController = null; }
+			}
+
+			function showSummStep(step) {
+				$$(".summ-step").forEach((el) => el.classList.remove("active"));
+				id(`summ-step-${step}`).classList.add("active");
+				id("summ-sheet-title").textContent = step === 1 ? "SUMMARISE CONVERSATION" : "REVIEW SUMMARY";
+			}
+
+			async function runSummaryGeneration() {
+				const convo = currentConvo();
+				if (!convo) return;
+				if (!store.settings.apiKey) { showToast("API key missing."); return; }
+
+				const prompt = id("summ-prompt-textarea").value.trim();
+				if (!prompt) return;
+
+				showSummStep(2);
+				const resultEl = id("summ-result-textarea");
+				resultEl.value = "";
+				id("summ-generating").style.display = "flex";
+				id("summ-confirm-btn").disabled = true;
+				id("summ-regen-btn").disabled = true;
+
+				const convoText = convo.messages
+					.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+					.join("\n\n");
+
+				const body = {
+					model: store.settings.modelId || DEFAULT_SETTINGS.modelId,
+					stream: true,
+					temperature: 0.5,
+					messages: [
+						{ role: "system", content: prompt },
+						{ role: "user", content: convoText },
+					],
+				};
+				if (store.settings.provider) {
+					body.provider = { order: [store.settings.provider], allow_fallbacks: !store.settings.noFallbacks };
+				}
+
+				summController = new AbortController();
+				let summaryText = "";
+
+				try {
+					const response = await fetch(API_URL, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${store.settings.apiKey}`,
+							"HTTP-Referer": location.href,
+							"X-Title": "Chatternel",
+						},
+						body: JSON.stringify(body),
+						signal: summController.signal,
+					});
+
+					if (!response.ok) throw new Error(await extractError(response));
+
+					const reader = response.body.getReader();
+					const decoder = new TextDecoder();
+					let buffer = "";
+
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						buffer += decoder.decode(value, { stream: true });
+						const lines = buffer.split("\n");
+						buffer = lines.pop();
+						for (const line of lines) {
+							const delta = parseStreamLine(line);
+							if (delta?.content) {
+								summaryText += delta.content;
+								resultEl.value = summaryText;
+								resultEl.scrollTop = resultEl.scrollHeight;
+							}
+						}
+					}
+				} catch (err) {
+					if (err.name !== "AbortError") {
+						showToast("Summary error: " + err.message);
+						showSummStep(1);
+					}
+					summController = null;
+					id("summ-generating").style.display = "none";
+					return;
+				}
+
+				summController = null;
+				id("summ-generating").style.display = "none";
+				id("summ-confirm-btn").disabled = false;
+				id("summ-regen-btn").disabled = false;
+			}
+
+			function confirmSummary() {
+				const convo = currentConvo();
+				if (!convo) return;
+				const summaryText = id("summ-result-textarea").value.trim();
+				if (!summaryText) return;
+
+				// Keep last 2 messages
+				convo.messages = convo.messages.slice(-2);
+
+				// Append summary to system prompt
+				const base = store.settings.systemPrompt ? store.settings.systemPrompt.trimEnd() : "";
+				store.settings.systemPrompt = base + (base ? "\n\n" : "") + "---\nConversation Summary:\n" + summaryText;
+
+				convo.updatedAt = Date.now();
+				persist();
+				renderMessages();
+				closeSummary();
+				showToast("Conversation summarised ✦");
+			}
+
 			function wireEvents() {
+				id("summarise-convo-btn").addEventListener("click", openSummary);
 				id("new-btn").addEventListener("click", newConvo);
 				id("home-settings-btn").addEventListener("click", openSettings);
 				id("chat-settings-btn").addEventListener("click", openSettings);
@@ -2019,6 +2311,13 @@
 				id("settings-close").addEventListener("click", closeSettings);
 				id("save-settings-btn").addEventListener("click", saveSettings);
 				id("clear-convo-btn").addEventListener("click", clearConvo);
+				id("summ-mask").addEventListener("click", closeSummary);
+				id("summ-close").addEventListener("click", closeSummary);
+				id("summ-cancel-btn").addEventListener("click", closeSummary);
+				id("summ-generate-btn").addEventListener("click", runSummaryGeneration);
+				id("summ-back-btn").addEventListener("click", () => showSummStep(1));
+				id("summ-regen-btn").addEventListener("click", () => { id("summ-result-textarea").value = ""; runSummaryGeneration(); });
+				id("summ-confirm-btn").addEventListener("click", confirmSummary);
 				id("export-btn").addEventListener("click", exportData);
 				id("import-btn").addEventListener("click", importData);
 				id("send-btn").addEventListener("click", sendMessage);
