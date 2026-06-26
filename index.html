@@ -1047,6 +1047,24 @@
 				background: var(--surface);
 			}
 
+			#summ-chip {
+				font-size: 10px;
+				font-weight: 500;
+				letter-spacing: 0.04em;
+				color: var(--gold);
+				background: var(--gold-glow);
+				border: 1px solid var(--gold-dim);
+				border-radius: 10px;
+				padding: 3px 9px;
+				flex-shrink: 0;
+				cursor: pointer;
+				display: none;
+				transition: background 0.15s;
+				line-height: 1;
+			}
+			#summ-chip.visible { display: block; }
+			#summ-chip:active { background: rgba(212, 170, 78, 0.24); }
+
 			/* ── Summarise modal ── */
 			#summ-mask {
 				position: fixed;
@@ -1173,6 +1191,7 @@
 						<div id="chat-title"></div>
 					</div>
 					<div id="model-chip"></div>
+					<button id="summ-chip" aria-label="View conversation summary">✦ SUMMARY</button>
 					<button class="icon-btn" id="chat-settings-btn" aria-label="Settings">
 						<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="3" />
@@ -1306,7 +1325,7 @@
 				<div class="summ-body">
 					<!-- Step 1: configure prompt -->
 					<div class="summ-step active" id="summ-step-1">
-						<p class="summ-hint">A summary will be generated using the instruction below, then appended to your system prompt. The conversation will be condensed to only its last few messages.</p>
+						<p class="summ-hint">A summary will be generated using the instruction below. If a previous summary exists it will be passed as context so the new one incorporates everything. The conversation will be condensed to its last 2 messages.</p>
 						<textarea class="summ-textarea" id="summ-prompt-textarea" rows="8" spellcheck="true"></textarea>
 						<div class="summ-actions">
 							<button class="btn btn-ghost" id="summ-cancel-btn" style="flex:1">CANCEL</button>
@@ -1315,7 +1334,7 @@
 					</div>
 					<!-- Step 2: review & confirm -->
 					<div class="summ-step" id="summ-step-2">
-						<p class="summ-hint">Review and edit the summary below. Confirming will clear the conversation (keeping the last 2 messages) and append this summary to your system prompt.</p>
+						<p class="summ-hint">Review and edit the summary below. This will <em>replace</em> any existing summary and is kept entirely separate from your system prompt.</p>
 						<div id="summ-generating">
 							<div class="typing-ind"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
 							<span>Generating summary…</span>
@@ -1325,6 +1344,15 @@
 							<button class="btn btn-ghost btn-sm" id="summ-back-btn">← BACK</button>
 							<button class="btn btn-ghost btn-sm" id="summ-regen-btn" style="flex:1">↺ REGENERATE</button>
 							<button class="btn btn-gold btn-sm" id="summ-confirm-btn" style="flex:2">✓ CONFIRM</button>
+						</div>
+					</div>
+					<!-- Step 3: view/edit existing summary -->
+					<div class="summ-step" id="summ-step-3">
+						<p class="summ-hint">This summary is automatically appended to your system prompt during the conversation, and fed back into the next summarisation as prior context. Edit or clear it freely.</p>
+						<textarea class="summ-textarea" id="summ-view-textarea" rows="14" spellcheck="true"></textarea>
+						<div class="summ-actions">
+							<button class="btn btn-danger btn-sm" id="summ-clear-btn">✕ CLEAR</button>
+							<button class="btn btn-gold btn-sm" id="summ-save-btn" style="flex:1">SAVE CHANGES</button>
 						</div>
 					</div>
 				</div>
@@ -1564,6 +1592,7 @@
 
 				id("chat-title").textContent = convo.title;
 				dom.modelChip.textContent = (store.settings.modelId || "—").split("/").pop();
+				updateSummChip();
 				renderMessages();
 				scrollBottom();
 				updateSendBtn();
@@ -1796,7 +1825,15 @@
 				const { settings } = store;
 				const endIdx = targetIndex !== null ? targetIndex : convo.messages.length - 1;
 				const history = convo.messages.slice(0, endIdx).map(({ role, content }) => ({ role, content }));
-				const messages = settings.systemPrompt ? [{ role: "system", content: settings.systemPrompt }, ...history] : history;
+
+				// Combine user system prompt with conversation summary (kept separate)
+				let systemContent = settings.systemPrompt || "";
+				if (convo.summary) {
+					const base = systemContent.trimEnd();
+					systemContent = base + (base ? "\n\n" : "") + "---\nConversation Summary (context from earlier in this conversation):\n" + convo.summary;
+				}
+
+				const messages = systemContent ? [{ role: "system", content: systemContent }, ...history] : history;
 
 				const body = {
 					model: settings.modelId || DEFAULT_SETTINGS.modelId,
@@ -2194,7 +2231,8 @@
 			function showSummStep(step) {
 				$$(".summ-step").forEach((el) => el.classList.remove("active"));
 				id(`summ-step-${step}`).classList.add("active");
-				id("summ-sheet-title").textContent = step === 1 ? "SUMMARISE CONVERSATION" : "REVIEW SUMMARY";
+				const titles = { 1: "SUMMARISE CONVERSATION", 2: "REVIEW SUMMARY", 3: "CURRENT SUMMARY" };
+				id("summ-sheet-title").textContent = titles[step] || "SUMMARISE CONVERSATION";
 			}
 
 			async function runSummaryGeneration() {
@@ -2216,13 +2254,18 @@
 					.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
 					.join("\n\n");
 
+				// If a prior summary exists, include it so the new one consolidates everything
+				const userContent = convo.summary
+					? `Previous summary (incorporate and update this with the new conversation below):\n---\n${convo.summary}\n---\n\nNew conversation to integrate:\n---\n${convoText}`
+					: convoText;
+
 				const body = {
 					model: store.settings.modelId || DEFAULT_SETTINGS.modelId,
 					stream: true,
 					temperature: 0.5,
 					messages: [
 						{ role: "system", content: prompt },
-						{ role: "user", content: convoText },
+						{ role: "user", content: userContent },
 					],
 				};
 				if (store.settings.provider) {
@@ -2291,15 +2334,56 @@
 				// Keep last 2 messages
 				convo.messages = convo.messages.slice(-2);
 
-				// Append summary to system prompt
-				const base = store.settings.systemPrompt ? store.settings.systemPrompt.trimEnd() : "";
-				store.settings.systemPrompt = base + (base ? "\n\n" : "") + "---\nConversation Summary:\n" + summaryText;
+				// Store as a dedicated per-conversation field — replaces any previous summary
+				convo.summary = summaryText;
 
 				convo.updatedAt = Date.now();
 				persist();
 				renderMessages();
+				updateSummChip();
 				closeSummary();
 				showToast("Conversation summarised ✦");
+			}
+
+			function openSummaryView() {
+				const convo = currentConvo();
+				if (!convo || !convo.summary) return;
+				id("summ-view-textarea").value = convo.summary;
+				showSummStep(3);
+				id("summ-mask").classList.add("open");
+				id("summ-sheet").classList.add("open");
+			}
+
+			function saveSummaryView() {
+				const convo = currentConvo();
+				if (!convo) return;
+				const text = id("summ-view-textarea").value.trim();
+				if (text) {
+					convo.summary = text;
+					convo.updatedAt = Date.now();
+					persist();
+					closeSummary();
+					showToast("Summary saved ✦");
+				} else {
+					clearSummary();
+				}
+			}
+
+			function clearSummary() {
+				const convo = currentConvo();
+				if (!convo) return;
+				convo.summary = "";
+				convo.updatedAt = Date.now();
+				persist();
+				updateSummChip();
+				closeSummary();
+				showToast("Summary cleared");
+			}
+
+			function updateSummChip() {
+				const convo = currentConvo();
+				const chip = id("summ-chip");
+				if (chip) chip.classList.toggle("visible", !!(convo && convo.summary));
 			}
 
 			function wireEvents() {
@@ -2318,6 +2402,9 @@
 				id("summ-back-btn").addEventListener("click", () => showSummStep(1));
 				id("summ-regen-btn").addEventListener("click", () => { id("summ-result-textarea").value = ""; runSummaryGeneration(); });
 				id("summ-confirm-btn").addEventListener("click", confirmSummary);
+				id("summ-chip").addEventListener("click", openSummaryView);
+				id("summ-save-btn").addEventListener("click", saveSummaryView);
+				id("summ-clear-btn").addEventListener("click", clearSummary);
 				id("export-btn").addEventListener("click", exportData);
 				id("import-btn").addEventListener("click", importData);
 				id("send-btn").addEventListener("click", sendMessage);
