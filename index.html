@@ -234,7 +234,7 @@
 				color: var(--red);
 				background: var(--red-dim);
 			}
-			.open-state, .empty-state {
+			.open-state {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -438,6 +438,78 @@
 				padding: 1px 5px;
 				border-radius: 3px;
 				color: #9dba88;
+			}
+
+			.code-block {
+				margin: 10px 0;
+				border-radius: var(--radius);
+				border: 1px solid var(--border-hi);
+				overflow: hidden;
+				font-size: 0; /* collapse whitespace between children */
+			}
+			.code-block:first-child { margin-top: 2px; }
+			.code-block:last-child { margin-bottom: 2px; }
+			.code-header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 6px 12px;
+				background: var(--surface-2);
+				border-bottom: 1px solid var(--border);
+				gap: 8px;
+			}
+			.code-lang {
+				font-size: 10px;
+				font-weight: 500;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--ink-muted);
+				font-family: var(--body);
+			}
+			.code-copy-btn {
+				background: none;
+				border: 1px solid var(--border);
+				border-radius: 3px;
+				color: var(--ink-dim);
+				font-size: 9.5px;
+				font-weight: 500;
+				letter-spacing: 0.07em;
+				padding: 3px 10px;
+				cursor: pointer;
+				font-family: var(--body);
+				transition:
+					color 0.15s,
+					border-color 0.15s,
+					background 0.15s;
+				flex-shrink: 0;
+				user-select: none;
+			}
+			.code-copy-btn:active {
+				color: var(--gold);
+				border-color: var(--gold-dim);
+				background: var(--gold-glow);
+			}
+			.code-block pre {
+				margin: 0;
+				padding: 14px;
+				overflow-x: auto;
+				background: var(--bg-3);
+				scrollbar-width: thin;
+				scrollbar-color: var(--border) transparent;
+				font-size: 13px; /* restore after parent resets */
+			}
+			.code-block pre::-webkit-scrollbar { height: 3px; }
+			.code-block pre::-webkit-scrollbar-thumb { background: var(--border); }
+			.code-block pre code {
+				font-family: "Roboto Mono", monospace;
+				font-size: 13px;
+				line-height: 1.65;
+				color: #b2cfa0;
+				background: none;
+				padding: 0;
+				border-radius: 0;
+				display: block;
+				white-space: pre;
 			}
 
 			.msg-reasoning {
@@ -1487,15 +1559,41 @@
 				return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 			}
 
-			function renderMarkdown(raw) {
-				const html = escHtml(raw)
+			function renderInline(text) {
+				if (!text) return "";
+				const html = escHtml(text)
 					.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
 					.replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
 					.replace(/_([^_\n]+)_/g, "<em>$1</em>")
 					.replace(/`([^`]+)`/g, "<code>$1</code>");
-
 				const paragraphs = html.split(/\n{2,}/);
-				return paragraphs.length > 1 ? paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("") : html.replace(/\n/g, "<br>");
+				return paragraphs.length > 1
+					? paragraphs.map((p) => (p.trim() ? `<p>${p.replace(/\n/g, "<br>")}</p>` : "")).join("")
+					: html.replace(/\n/g, "<br>");
+			}
+
+			function buildCodeBlock(lang, code) {
+				const label = escHtml(lang || "text");
+				return (
+					`<div class="code-block">` +
+					`<div class="code-header"><span class="code-lang">${label}</span>` +
+					`<button class="code-copy-btn">COPY</button></div>` +
+					`<pre><code>${escHtml(code)}</code></pre>` +
+					`</div>`
+				);
+			}
+
+			function renderMarkdown(raw) {
+				// Split on complete fenced code blocks; incomplete blocks during streaming
+				// fall through to inline rendering and re-render correctly once closed.
+				const parts = raw.split(/(```\w*[ \t]*\n[\s\S]*?```)/g);
+				return parts
+					.map((part) => {
+						const m = part.match(/^```(\w*)[ \t]*\n([\s\S]*)```$/);
+						if (m) return buildCodeBlock(m[1], m[2].trimEnd());
+						return renderInline(part);
+					})
+					.join("");
 			}
 
 			function autoResize(el) {
@@ -2422,6 +2520,19 @@
 				});
 
 				dom.msgs.addEventListener("click", (event) => {
+					// Code block copy button
+					const copyBtn = event.target.closest(".code-copy-btn");
+					if (copyBtn) {
+						const codeEl = copyBtn.closest(".code-block")?.querySelector("code");
+						if (codeEl) {
+							navigator.clipboard.writeText(codeEl.textContent).then(() => {
+								copyBtn.textContent = "COPIED ✦";
+								setTimeout(() => { copyBtn.textContent = "COPY"; }, 1600);
+							}).catch(() => showToast("Copy failed"));
+						}
+						return;
+					}
+
 					const reasoningHeader = event.target.closest(".msg-reasoning-header");
 					if (reasoningHeader) {
 						const reasoningEl = reasoningHeader.closest(".msg-reasoning");
