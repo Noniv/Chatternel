@@ -1,84 +1,88 @@
 # Chatternel
 
-**A private, fully client-side frontend for OpenRouter LLMs.**
+**A clean, mobile-first chat interface for LLMs via [OpenRouter](https://openrouter.ai).**
 
-Chatternel is a lightweight, single-file HTML application that lets you chat with any model available on OpenRouter directly from your browser. No backend, no databases, no tracking—just you and the model.
-
-🌐 **Try it live:** [noniv.github.io/Chatternel](https://noniv.github.io/Chatternel/)
+→ **[Try it live](https://noniv.github.io/Chatternel/)**
 
 ---
 
-### ✨ Key Features
-
-- **100% Private & Client-Side:** Your API key and chat history are stored locally in your browser. Nothing is sent to any server except OpenRouter.
-- **Single File App:** The entire application is contained in one `index.html` file. No build steps, no dependencies. Just open it and go.
-- **Full Model Control:**
-  - Choose any model via its ID (e.g., `anthropic/claude-opus-4`).
-  - Pin requests to a specific provider (e.g., `DeepInfra`, `Together`).
-  - Adjust the `temperature` to control creativity.
-  - Modify `top_p` to control diversity via nucleus sampling.
-  - Set a custom `System Prompt`.
-- **Reasoning Support:**
-  - Control the reasoning effort (`MIN`, `LOW`, `MED`, `HIGH`, `MAX`) or set an exact token budget.
-  - View the model's reasoning process above the response, or exclude it entirely.
-- **Conversation Management:**
-  - **Multiple Chats:** Keep several conversations going at once.
-  - **Edit History:** Modify your past messages from any point and branch the conversation.
-  - **Regenerate:** Don't like an answer? One click regenerates the response.
-  - **Edit Titles:** Rename your chats to keep them organized.
-- **Data Portability:**
-  - Export your entire app state (settings + all conversations) to a JSON file.
-  - Import the JSON file on any other device to seamlessly pick up where you left off.
+Chatternel is a single HTML file you can open in any browser — no installation, no account, no backend. Your API key lives in your browser's local storage and goes nowhere except directly to OpenRouter's API.
 
 ---
 
-### 🚀 Getting Started
+## Features
 
-1.  **Get an API Key:** If you don't have one, sign up at [OpenRouter](https://openrouter.ai/) and create an API key.
-2.  **Open Chatternel:** Go to [chatternel.com](https://chatternel.com) or open the `index.html` file locally.
-3.  **Configure Settings:** Tap the settings gear icon in the top right.
-4.  **Enter API Key:** Paste your OpenRouter API key (`sk-or-v1-...`). It is stored only in your browser's local storage.
-5.  **Choose Model:** Enter the Model ID you want to use (e.g., `openai/gpt-4o`).
-6.  **Start Chatting:** Click "New Chat" and start messaging!
+### Multiple Conversations
+Keep as many conversations going as you want. Each one has its own title (auto-set from your first message, tap to rename), timestamp, and full message history. Switch between them instantly from the home screen.
+
+### Any Model on OpenRouter
+Type in any model ID available on OpenRouter — Claude, GPT-4o, Llama, Mistral, Gemma, DeepSeek, and hundreds more. The active model is always visible as a chip in the chat header.
+
+### Streaming Responses
+Responses stream in token by token as they're generated, so you're never staring at a blank screen waiting.
+
+### Extended Thinking / Reasoning
+For models that support it (Claude, DeepSeek R1, etc.), you can enable reasoning output. Choose an effort level (low / medium / high / max) or set an exact token budget. Reasoning traces are shown in a collapsible block above the response so they stay out of the way until you want them.
+
+### Full Message Control
+
+- **Edit user messages** — tap EDIT on any message you sent, modify it, and the conversation reruns from that point.
+- **Edit AI responses** — tap EDIT on any assistant message to correct or adjust it in place without triggering a regeneration.
+- **Regenerate** — tap ↺ REDO on any AI response to get an alternative. Flick through all alternatives with ‹ › arrows.
+
+### Code Blocks
+Fenced code in responses is rendered as a proper code block with a language label and a one-tap **COPY** button. Inline code is styled separately. All rendering happens client-side with no external libraries.
+
+### Conversation Summarisation
+When a long conversation starts eating into your context window, hit **✦ Summarise Conversation** in settings. The flow:
+
+1. Review (and optionally edit) the summarisation prompt.
+2. The current conversation — plus any existing summary — is sent to the model, which produces one consolidated summary.
+3. Review and edit the result, then confirm.
+
+On confirmation the conversation is trimmed to its last 2 messages, and the summary is stored as a separate field on the conversation. It's automatically injected at the end of your system prompt on every subsequent request, and fed back as prior context the next time you summarise — so you can repeat this as many times as you like without your system prompt growing unboundedly or summaries contradicting each other.
+
+The summary is always visible as a **✦ SUMMARY** chip in the chat header when one exists. Tap it to view, edit, or clear it at any time.
+
+### Fully Configurable
+
+| Setting | Details |
+|---|---|
+| System prompt | Per-session, editable at any time |
+| Temperature | 0 – 2 slider |
+| Top-P | 0 – 1 slider |
+| Provider pin | Lock requests to a specific OpenRouter provider |
+| Strict mode | Error instead of falling back to another provider |
+| Reasoning effort | Low / Med / High / Max, or exact token budget |
+| Hide reasoning | Strip reasoning from the API response entirely |
+
+### Data Stays Yours
+
+- **Export** the entire app state (all conversations + settings) as a JSON file at any time.
+- **Import** it back on any device or browser.
+- Nothing is ever sent to a server other than OpenRouter's API endpoint.
+
+### Mobile-First
+The layout is built for phones. The home and chat screens slide in and out with native-feeling transitions. Swipe right from the left edge to go back. Safe-area insets are respected on iOS. The input field grows as you type and stops at a sensible maximum height.
 
 ---
 
-<details>
-<summary><b>⚙️ Advanced Configuration</b></summary>
+## Getting Started
 
-You can fine-tune the model behavior in the settings panel:
+1. Open [noniv.github.io/Chatternel](https://noniv.github.io/Chatternel/)
+2. Tap the ⚙ settings icon and paste your [OpenRouter API key](https://openrouter.ai/keys)
+3. Optionally change the model ID (default: `anthropic/claude-opus-4`)
+4. Tap **Save Settings**, then **New Chat**
 
-*   **Provider Pinning:** Force OpenRouter to use a specific provider (e.g., `Together`). You can enable "Strict" mode to error out if that provider is unavailable, preventing fallbacks.
-*   **Reasoning:**
-    *   Use the effort buttons (`MIN` to `MAX`) to let the model decide how hard to think.
-    *   Alternatively, specify an exact `Token budget` (e.g., `4000`).
-    *   Toggle **Hide reasoning** to exclude the thought process from the API response entirely (if you only want the final answer).
-*   **Temperature & Top P:**
-    *   **Temperature:** Use the slider to adjust randomness. Higher values (e.g., `1.5`) are more creative; lower values (e.g., `0.2`) are more deterministic.
-    *   **Top P:** Use the slider for nucleus sampling. `1.0` considers all tokens, while lower values like `0.9` restrict the model to the most probable tokens. *Note: OpenAI recommends altering either Temperature or Top P, but not both.*
-
-</details>
-
-<details>
-<summary><b>💾 Backup & Sync Between Devices</b></summary>
-
-Since Chatternel runs entirely in your browser, your data doesn't automatically sync to the cloud. You can move your data manually:
-
-1.  Open Settings.
-2.  Click **⬇ Export JSON**. This will download a file named `chatternel-backup-YYYY-MM-DD.json`.
-3.  On your other device, open Chatternel and go to Settings.
-4.  Click **⬆ Import JSON** and select the file you downloaded.
-
-*Note: Importing will overwrite the current data on the target device.*
-
-</details>
+That's it.
 
 ---
 
-### ❓ FAQ
+## Privacy
 
-**Is my API key safe?**
-Yes. The key is stored in your browser's `localStorage` and is only sent directly to OpenRouter's API. It never passes through our servers.
+Chatternel has no backend, no analytics, no telemetry, and no accounts. The only network requests the app makes are:
 
-**Can I use this on mobile?**
-Yes! Chatternel is designed to be responsive and works great on mobile browsers. It also supports "Add to Home Screen" for an app-like experience.
+- `fonts.googleapis.com` — to load Roboto and Roboto Mono
+- `openrouter.ai/api/v1/chat/completions` — your actual chat requests
+
+Your API key is stored in `localStorage` in your own browser. It is sent only in the `Authorization` header of your chat requests, directly to OpenRouter.
