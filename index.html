@@ -234,7 +234,7 @@
 				color: var(--red);
 				background: var(--red-dim);
 			}
-			.open-state {
+			.open-state, .empty-state {
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -445,7 +445,6 @@
 				border-radius: var(--radius);
 				border: 1px solid var(--border-hi);
 				overflow: hidden;
-				font-size: 0; /* collapse whitespace between children */
 			}
 			.code-block:first-child { margin-top: 2px; }
 			.code-block:last-child { margin-bottom: 2px; }
@@ -496,7 +495,6 @@
 				background: var(--bg-3);
 				scrollbar-width: thin;
 				scrollbar-color: var(--border) transparent;
-				font-size: 13px; /* restore after parent resets */
 			}
 			.code-block pre::-webkit-scrollbar { height: 3px; }
 			.code-block pre::-webkit-scrollbar-thumb { background: var(--border); }
@@ -1187,6 +1185,7 @@
 				font-style: italic;
 				line-height: 1.65;
 			}
+
 			.summ-textarea {
 				background: var(--surface);
 				border: 1px solid var(--border);
@@ -1566,10 +1565,13 @@
 					.replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
 					.replace(/_([^_\n]+)_/g, "<em>$1</em>")
 					.replace(/`([^`]+)`/g, "<code>$1</code>");
-				const paragraphs = html.split(/\n{2,}/);
-				return paragraphs.length > 1
-					? paragraphs.map((p) => (p.trim() ? `<p>${p.replace(/\n/g, "<br>")}</p>` : "")).join("")
-					: html.replace(/\n/g, "<br>");
+				// Always wrap in <p> tags so that single-paragraph tails and multi-paragraph
+				// stable portions produce identical DOM structure — prevents layout jumps
+				// when the stable pointer advances and content migrates from tail to stable.
+				return html
+					.split(/\n{2,}/)
+					.map((p) => (p.trim() ? `<p>${p.replace(/\n/g, "<br>")}</p>` : ""))
+					.join("");
 			}
 
 			function buildCodeBlock(lang, code) {
@@ -1596,9 +1598,153 @@
 					.join("");
 			}
 
+			function copyCodeToClipboard(text, btn) {
+				const onSuccess = () => {
+					btn.textContent = "COPIED ✦";
+					setTimeout(() => { btn.textContent = "COPY"; }, 1600);
+				};
+
+				// Modern async clipboard API (requires HTTPS + permission)
+				if (navigator.clipboard?.writeText) {
+					navigator.clipboard.writeText(text).then(onSuccess).catch(() => execCommandCopy(text, onSuccess));
+					return;
+				}
+				execCommandCopy(text, onSuccess);
+			}
+
+			// Universal fallback: create an on-screen textarea, select it, and use
+			// execCommand("copy"). Must be on-screen (not left:-9999px) for iOS Safari,
+			// and must use setSelectionRange rather than select() for the same reason.
+			function execCommandCopy(text, onSuccess) {
+				const ta = document.createElement("textarea");
+				ta.value = text;
+				ta.setAttribute("readonly", "");
+				ta.style.cssText = "position:fixed;top:0;left:0;width:2em;height:2em;opacity:0;pointer-events:none;";
+				document.body.appendChild(ta);
+				ta.focus();
+				ta.setSelectionRange(0, text.length);
+				let ok = false;
+				try { ok = document.execCommand("copy"); } catch (_) {}
+				document.body.removeChild(ta);
+				if (ok) onSuccess();
+				else showToast("Copy failed");
+			}
+
 			function autoResize(el) {
 				el.style.height = "auto";
 				el.style.height = Math.min(el.scrollHeight, MAX_INPUT_HEIGHT) + "px";
+			}
+
+			// ── Streaming render: rAF throttling + incremental stable-tail split ──
+			// The stable portion is HTML already rendered and cached — never touched again.
+			// Only the growing tail (typically <500 chars) is re-rendered each frame.
+			// This keeps regex work and innerHTML churn proportional to *new* content,
+			// not to the total accumulated length.
+			const streamRender = {
+				rafId: null,
+				stableHtml: "",
+				stableEndIdx: 0,
+				stableReasonHtml: "",
+				stableReasonEndIdx: 0,
+				pendingContent: null,   // latest full content string, or null if nothing new
+				pendingReason: null,    // latest full reasoning string, or null if nothing new
+				userScrolled: false,
+				// Timestamp: ignore scroll events fired before this (our own programmatic scrolls)
+				_ignoreScrollBefore: 0,
+			};
+
+			function resetStreamRender() {
+				if (streamRender.rafId) { cancelAnimationFrame(streamRender.rafId); streamRender.rafId = null; }
+				streamRender.stableHtml = "";
+				streamRender.stableEndIdx = 0;
+				streamRender.stableReasonHtml = "";
+				streamRender.stableReasonEndIdx = 0;
+				streamRender.pendingContent = null;
+				streamRender.pendingReason = null;
+				streamRender.userScrolled = false;
+				streamRender._ignoreScrollBefore = 0;
+			}
+
+			// Returns the furthest index we can safely cache:
+			// outside a code block AND at a paragraph boundary.
+			function getStableCutoff(raw, currentIdx) {
+				const MIN_TAIL = 400; // always keep at least 400 chars in the live tail
+				const searchBound = raw.length - MIN_TAIL;
+				if (searchBound <= currentIdx) return currentIdx;
+
+				// Walk backwards from searchBound to find a double-newline (paragraph boundary)
+				let pos = raw.lastIndexOf("\n\n", searchBound);
+				if (pos < currentIdx) return currentIdx;
+
+				const candidateEnd = pos + 2;
+				// Reject if we'd be inside an open code fence
+				const fences = (raw.slice(0, candidateEnd).match(/```/g) || []).length;
+				if (fences % 2 !== 0) return currentIdx;
+
+				return candidateEnd;
+			}
+
+			// Render a (possibly still-open) tail chunk. If there's an unclosed ``` we
+			// temporarily close it so the code block renders instead of raw backticks.
+			function renderTail(tail) {
+				if (!tail) return "";
+				const fences = (tail.match(/```/g) || []).length;
+				return fences % 2 !== 0 ? renderMarkdown(tail + "\n```") : renderMarkdown(tail);
+			}
+
+			function advanceStable(raw, stableHtmlRef, stableIdxRef) {
+				const newIdx = getStableCutoff(raw, stableIdxRef.v);
+				if (newIdx > stableIdxRef.v) {
+					stableHtmlRef.v = renderMarkdown(raw.slice(0, newIdx));
+					stableIdxRef.v = newIdx;
+				}
+			}
+
+			function scheduleStreamRender() {
+				if (streamRender.rafId) return; // already queued for this frame
+				streamRender.rafId = requestAnimationFrame(() => {
+					streamRender.rafId = null;
+
+					// ── render main content ──
+					if (stream.body && streamRender.pendingContent !== null) {
+						const raw = streamRender.pendingContent;
+						streamRender.pendingContent = null;
+
+						const stH = { v: streamRender.stableHtml };
+						const stI = { v: streamRender.stableEndIdx };
+						advanceStable(raw, stH, stI);
+						streamRender.stableHtml = stH.v;
+						streamRender.stableEndIdx = stI.v;
+
+						const tail = raw.slice(streamRender.stableEndIdx);
+						stream.body.innerHTML = raw
+							? streamRender.stableHtml + renderTail(tail)
+							: TYPING_INDICATOR;
+					}
+
+					// ── render reasoning ──
+					if (stream.reasoning && streamRender.pendingReason !== null) {
+						const raw = streamRender.pendingReason;
+						streamRender.pendingReason = null;
+
+						const stH = { v: streamRender.stableReasonHtml };
+						const stI = { v: streamRender.stableReasonEndIdx };
+						advanceStable(raw, stH, stI);
+						streamRender.stableReasonHtml = stH.v;
+						streamRender.stableReasonEndIdx = stI.v;
+
+						const tail = raw.slice(streamRender.stableReasonEndIdx);
+						stream.reasoning.innerHTML = streamRender.stableReasonHtml + renderTail(tail);
+					}
+
+					// ── smart scroll: only auto-scroll if the user hasn't scrolled up ──
+					// Stamp a short suppression window so the scroll event this assignment
+					// fires doesn't get mistaken for a user scroll and toggle userScrolled.
+					if (!streamRender.userScrolled) {
+						streamRender._ignoreScrollBefore = Date.now() + 80;
+						dom.msgs.scrollTop = dom.msgs.scrollHeight;
+					}
+				});
 			}
 
 			function scrollBottom(smooth = false) {
@@ -2036,7 +2182,8 @@
 							if (delta.reasoning) {
 								reasoning += delta.reasoning;
 								ensureReasoningEl();
-								if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
+								streamRender.pendingReason = reasoning;
+								scheduleStreamRender();
 							}
 
 							if (delta.content) {
@@ -2092,13 +2239,14 @@
 									}
 								}
 
-								if (stream.body) stream.body.innerHTML = content ? renderMarkdown(content) : TYPING_INDICATOR;
+								// Queue a render — the rAF scheduler batches rapid chunks
+								streamRender.pendingContent = content;
 								if (reasoning) {
 									ensureReasoningEl();
-									if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
+									streamRender.pendingReason = reasoning;
 								}
+								scheduleStreamRender();
 							}
-							scrollBottom();
 						}
 					}
 
@@ -2126,6 +2274,8 @@
 			}
 
 			function finalizeGeneration(convo, index, { content, reasoning, errored }) {
+				// Cancel any queued render frame and reset incremental state
+				if (streamRender.rafId) { cancelAnimationFrame(streamRender.rafId); streamRender.rafId = null; }
 				const fallback = errored ? "[Error — check your API key and model ID]" : "[No response]";
 				const finalContent = content || fallback;
 
@@ -2167,6 +2317,7 @@
 				if (!convo) return;
 				if (!store.settings.apiKey) return showToast("API key missing.");
 
+				resetStreamRender();
 				stream.active = true;
 				stream.controller = new AbortController();
 				setSendBtnState("stop");
@@ -2486,6 +2637,15 @@
 
 			function wireEvents() {
 				id("summarise-convo-btn").addEventListener("click", openSummary);
+				// Smart scroll: pause auto-scroll when user scrolls up; resume when they
+				// scroll back near the bottom. Ignores events from our own scrollTop writes.
+				dom.msgs.addEventListener("scroll", () => {
+					if (Date.now() < streamRender._ignoreScrollBefore) return;
+					if (!stream.active) return;
+					const dist = dom.msgs.scrollHeight - dom.msgs.scrollTop - dom.msgs.clientHeight;
+					streamRender.userScrolled = dist > 80;
+				}, { passive: true });
+
 				id("new-btn").addEventListener("click", newConvo);
 				id("home-settings-btn").addEventListener("click", openSettings);
 				id("chat-settings-btn").addEventListener("click", openSettings);
@@ -2524,12 +2684,7 @@
 					const copyBtn = event.target.closest(".code-copy-btn");
 					if (copyBtn) {
 						const codeEl = copyBtn.closest(".code-block")?.querySelector("code");
-						if (codeEl) {
-							navigator.clipboard.writeText(codeEl.textContent).then(() => {
-								copyBtn.textContent = "COPIED ✦";
-								setTimeout(() => { copyBtn.textContent = "COPY"; }, 1600);
-							}).catch(() => showToast("Copy failed"));
-						}
+						if (codeEl) copyCodeToClipboard(codeEl.textContent, copyBtn);
 						return;
 					}
 
