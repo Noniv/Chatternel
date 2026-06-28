@@ -1872,8 +1872,8 @@
 				const isUser = msg.role === "user";
 				const label = isUser ? "YOU" : "AI";
 				const actionBtn = isUser
-					? '<button class="msg-btn" data-action="edit">EDIT</button>'
-					: '<button class="msg-btn" data-action="edit">EDIT</button><button class="msg-btn" data-action="redo">↺ REDO</button>';
+					? '<button class="msg-btn" data-action="copy">COPY</button><button class="msg-btn" data-action="edit">EDIT</button>'
+					: '<button class="msg-btn" data-action="copy">COPY</button><button class="msg-btn" data-action="edit">EDIT</button><button class="msg-btn" data-action="redo">↺ REDO</button>';
 
 				const showReasoning = msg.role === "assistant" && msg.reasoning && !store.settings.reasoningExclude;
 				const reasoningHtml = showReasoning ? `<div class="msg-reasoning collapsed">${REASONING_LABEL}${renderMarkdown(msg.reasoning)}${REASONING_CLOSE}</div>` : "";
@@ -2439,7 +2439,17 @@
 				showToast("Conversation cleared");
 			}
 
+			function copyMessage(index) {
+				const convo = currentConvo();
+				if (!convo) return;
+				const msg = convo.messages[index];
+				if (!msg) return;
+				const btn = getMsgEl(index)?.querySelector('[data-action="copy"]');
+				copyCodeToClipboard(msg.content, btn);
+			}
+
 			const MSG_ACTIONS = {
+				copy: copyMessage,
 				edit: startEdit,
 				redo: regenerateFrom,
 				"save-edit": saveEdit,
