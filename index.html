@@ -2085,6 +2085,7 @@
 					temperature: settings.temperature ?? 0.85,
 					top_p: settings.topP ?? 1.0,
 					messages,
+					cache_control : { type: "ephemeral" }
 				};
 
 				if (settings.provider) {
