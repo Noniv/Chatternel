@@ -51,7 +51,7 @@
 				background: var(--bg);
 				color: var(--ink);
 				font-family: var(--body);
-				font-size: 15px;
+				font-size: 16px;
 				line-height: 1.6;
 				-webkit-font-smoothing: antialiased;
 			}
@@ -117,7 +117,7 @@
 				line-height: 1;
 			}
 			.wordmark-sub {
-				font-size: 11px;
+				font-size: 12px;
 				color: var(--ink-muted);
 				letter-spacing: 0.04em;
 			}
@@ -125,12 +125,12 @@
 				display: flex;
 				align-items: center;
 				gap: 7px;
-				padding: 9px 16px;
+				padding: 10px 17px;
 				background: var(--gold);
 				color: #0e0a00;
 				border: none;
 				border-radius: var(--radius);
-				font-size: 11px;
+				font-size: 12px;
 				font-weight: 500;
 				letter-spacing: 0.05em;
 				cursor: pointer;
@@ -187,7 +187,7 @@
 				min-width: 0;
 			}
 			.convo-title {
-				font-size: 14px;
+				font-size: 15.5px;
 				font-weight: 500;
 				color: var(--ink);
 				white-space: nowrap;
@@ -195,13 +195,13 @@
 				text-overflow: ellipsis;
 			}
 			.convo-preview {
-				font-size: 13px;
+				font-size: 14px;
 				color: var(--ink-muted);
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				font-style: italic;
-				margin-top: 1px;
+				margin-top: 2px;
 			}
 			.convo-right {
 				display: flex;
@@ -211,7 +211,7 @@
 				flex-shrink: 0;
 			}
 			.convo-date {
-				font-size: 11px;
+				font-size: 12px;
 				color: var(--ink-muted);
 			}
 			.convo-del {
@@ -251,7 +251,7 @@
 			}
 			.empty-text {
 				font-style: italic;
-				font-size: 16px;
+				font-size: 17px;
 				color: var(--ink-muted);
 				line-height: 1.9;
 			}
@@ -298,7 +298,7 @@
 				min-width: 0;
 			}
 			#chat-title {
-				font-size: 14px;
+				font-size: 15.5px;
 				font-weight: 500;
 				color: var(--ink);
 				white-space: nowrap;
@@ -310,7 +310,7 @@
 				color: var(--gold);
 			}
 			#model-chip {
-				font-size: 11px;
+				font-size: 12px;
 				color: var(--ink-dim);
 				background: var(--surface);
 				border: 1px solid var(--border-hi);
@@ -361,7 +361,7 @@
 				margin-bottom: 5px;
 			}
 			.msg-label {
-				font-size: 10px;
+				font-size: 11px;
 				font-weight: 500;
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
@@ -387,10 +387,10 @@
 				border: 1px solid var(--border);
 				cursor: pointer;
 				color: var(--ink-dim);
-				font-size: 11px;
+				font-size: 12px;
 				font-weight: 500;
 				letter-spacing: 0.02em;
-				padding: 3px 9px;
+				padding: 4px 10px;
 				border-radius: 10px;
 				transition:
 					color 0.15s,
@@ -405,7 +405,7 @@
 			}
 
 			.msg-body {
-				font-size: 15px;
+				font-size: 16px;
 				line-height: 1.65;
 			}
 			.msg.user .msg-body {
@@ -433,7 +433,7 @@
 			}
 			.msg-body code {
 				font-family: "Roboto Mono", monospace;
-				font-size: 14px;
+				font-size: 14.5px;
 				background: var(--surface);
 				padding: 1px 5px;
 				border-radius: 3px;
@@ -458,7 +458,7 @@
 				gap: 8px;
 			}
 			.code-lang {
-				font-size: 10px;
+				font-size: 11px;
 				font-weight: 500;
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
@@ -470,7 +470,7 @@
 				border: 1px solid var(--border);
 				border-radius: 3px;
 				color: var(--ink-dim);
-				font-size: 9.5px;
+				font-size: 11px;
 				font-weight: 500;
 				letter-spacing: 0.07em;
 				padding: 3px 10px;
@@ -500,7 +500,7 @@
 			.code-block pre::-webkit-scrollbar-thumb { background: var(--border); }
 			.code-block pre code {
 				font-family: "Roboto Mono", monospace;
-				font-size: 13px;
+				font-size: 14px;
 				line-height: 1.65;
 				color: #b2cfa0;
 				background: none;
@@ -515,8 +515,8 @@
 				background: var(--bg-3);
 				border-left: 2px solid var(--border-hi);
 				border-radius: 0 var(--radius) var(--radius) 0;
-				font-size: 13.5px;
-				line-height: 1.55;
+				font-size: 14.5px;
+				line-height: 1.6;
 				color: var(--ink-muted);
 				font-style: italic;
 				white-space: pre-wrap;
@@ -536,20 +536,22 @@
 			.msg-reasoning-label {
 				display: block;
 				font-style: normal;
-				font-size: 9px;
+				font-size: 10.5px;
 				font-weight: 500;
 				letter-spacing: 0.1em;
 				text-transform: uppercase;
 				color: var(--ink-muted);
-				opacity: 0.8;
+				opacity: 0.85;
 				flex: 1;
 			}
 			.msg-reasoning-chevron {
-				font-style: normal;
-				font-size: 9px;
-				color: var(--ink-muted);
-				opacity: 0.6;
-				transition: transform 0.2s ease;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				color: var(--ink-dim);
+				opacity: 0.9;
 				flex-shrink: 0;
 			}
 			.msg-reasoning.collapsed .msg-reasoning-chevron {
@@ -574,7 +576,7 @@
 				border-radius: var(--radius);
 				padding: 10px 13px;
 				color: var(--ink);
-				font-size: 15px;
+				font-size: 16px;
 				line-height: 1.55;
 				resize: none;
 				outline: none;
@@ -648,7 +650,43 @@
 				}
 			}
 
+			#scroll-bottom-btn {
+				position: absolute;
+				left: 50%;
+				bottom: 100%;
+				margin-bottom: 10px;
+				transform: translate(-50%, 6px);
+				width: 38px;
+				height: 38px;
+				border-radius: 50%;
+				background: var(--surface-2);
+				border: 1px solid var(--border-hi);
+				color: var(--ink);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				opacity: 0;
+				pointer-events: none;
+				transition:
+					opacity 0.18s ease,
+					transform 0.18s ease,
+					background 0.15s;
+				box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+				z-index: 5;
+			}
+			#scroll-bottom-btn.visible {
+				opacity: 1;
+				pointer-events: all;
+				transform: translate(-50%, 0);
+			}
+			#scroll-bottom-btn:active {
+				background: var(--surface);
+				color: var(--gold);
+			}
+
 			.input-wrap {
+				position: relative;
 				border-top: 1px solid var(--border);
 				background: var(--bg);
 				padding: 10px 14px;
@@ -667,7 +705,7 @@
 				border-radius: 10px;
 				padding: 10px 14px;
 				color: var(--ink);
-				font-size: 15px;
+				font-size: 16px;
 				line-height: 1.5;
 				resize: none;
 				outline: none;
@@ -777,7 +815,7 @@
 				flex-shrink: 0;
 			}
 			.sheet-title {
-				font-size: 13px;
+				font-size: 14px;
 				font-weight: 500;
 				letter-spacing: 0.05em;
 				color: var(--gold);
@@ -824,14 +862,14 @@
 				gap: 6px;
 			}
 			.field-label {
-				font-size: 10px;
+				font-size: 11px;
 				font-weight: 500;
 				letter-spacing: 0.06em;
 				color: var(--ink-dim);
 			}
 			.field-label .optional {
 				color: var(--ink-muted);
-				font-size: 9px;
+				font-size: 10px;
 				letter-spacing: 0.05em;
 			}
 			.field-input {
@@ -854,7 +892,7 @@
 				border-radius: var(--radius);
 				padding: 10px 13px;
 				color: var(--ink);
-				font-size: 15px;
+				font-size: 16px;
 				line-height: 1.55;
 				outline: none;
 				resize: vertical;
@@ -866,7 +904,7 @@
 				border-color: var(--gold-dim);
 			}
 			.field-hint {
-				font-size: 12px;
+				font-size: 13px;
 				color: var(--ink-muted);
 				font-style: italic;
 			}
@@ -903,9 +941,9 @@
 				border: 2px solid var(--bg-2);
 			}
 			.temp-val {
-				font-size: 13px;
+				font-size: 14px;
 				color: var(--gold);
-				width: 34px;
+				width: 38px;
 				text-align: right;
 				flex-shrink: 0;
 			}
@@ -918,13 +956,13 @@
 			.effort-btn {
 				flex: 1;
 				min-width: 0;
-				padding: 7px 4px;
+				padding: 8px 3px;
 				background: var(--surface);
 				border: 1px solid var(--border);
 				border-radius: var(--radius);
 				color: var(--ink-dim);
-				font-size: 10px;
-				letter-spacing: 0.04em;
+				font-size: 10.5px;
+				letter-spacing: 0.03em;
 				cursor: pointer;
 				transition:
 					background 0.15s,
@@ -1008,7 +1046,7 @@
 				border: none;
 				border-radius: var(--radius);
 				cursor: pointer;
-				font-size: 11px;
+				font-size: 12px;
 				font-weight: 500;
 				letter-spacing: 0.04em;
 				transition:
@@ -1043,8 +1081,8 @@
 				background: rgba(192, 80, 80, 0.2);
 			}
 			.btn-sm {
-				padding: 6px 13px;
-				font-size: 9.5px;
+				padding: 7px 14px;
+				font-size: 11px;
 			}
 			.btn-full {
 				width: 100%;
@@ -1057,7 +1095,7 @@
 			}
 
 			#chat-title-input {
-				font-size: 14px;
+				font-size: 15.5px;
 				letter-spacing: 0.08em;
 				color: var(--gold);
 				background: none;
@@ -1078,7 +1116,7 @@
 				color: var(--ink);
 				padding: 9px 18px;
 				border-radius: 20px;
-				font-size: 13px;
+				font-size: 14px;
 				z-index: 999;
 				opacity: 0;
 				transition:
@@ -1118,14 +1156,14 @@
 			}
 
 			#summ-chip {
-				font-size: 10px;
+				font-size: 11px;
 				font-weight: 500;
 				letter-spacing: 0.04em;
 				color: var(--gold);
 				background: var(--gold-glow);
 				border: 1px solid var(--gold-dim);
 				border-radius: 10px;
-				padding: 3px 9px;
+				padding: 4px 10px;
 				flex-shrink: 0;
 				cursor: pointer;
 				display: none;
@@ -1135,7 +1173,6 @@
 			#summ-chip.visible { display: block; }
 			#summ-chip:active { background: rgba(212, 170, 78, 0.24); }
 
-			/* ── Summarise modal ── */
 			#summ-mask {
 				position: fixed;
 				inset: 0;
@@ -1180,7 +1217,7 @@
 			.summ-body::-webkit-scrollbar { width: 3px; }
 			.summ-body::-webkit-scrollbar-thumb { background: var(--border); }
 			.summ-hint {
-				font-size: 12.5px;
+				font-size: 13.5px;
 				color: var(--ink-muted);
 				font-style: italic;
 				line-height: 1.65;
@@ -1192,7 +1229,7 @@
 				border-radius: var(--radius);
 				padding: 10px 13px;
 				color: var(--ink);
-				font-size: 14px;
+				font-size: 15px;
 				line-height: 1.55;
 				outline: none;
 				resize: vertical;
@@ -1216,9 +1253,91 @@
 				align-items: center;
 				gap: 10px;
 				padding: 4px 0;
-				font-size: 13px;
+				font-size: 14px;
 				color: var(--ink-muted);
 				font-style: italic;
+			}
+
+			@media (min-width: 860px) {
+				html, body {
+					background: var(--bg-2);
+				}
+				body {
+					display: flex;
+					justify-content: center;
+					overflow: hidden;
+				}
+				#app {
+					width: 100%;
+					max-width: 980px;
+					border-left: 1px solid var(--border);
+					border-right: 1px solid var(--border);
+					box-shadow: 0 0 70px rgba(0, 0, 0, 0.45);
+				}
+				.home-header {
+					padding: 24px 28px 20px;
+				}
+				.wordmark-title {
+					font-size: 25px;
+				}
+				.convo-item {
+					padding: 16px 28px;
+					cursor: pointer;
+				}
+				.convo-item:hover {
+					background: var(--surface);
+				}
+				.chat-header {
+					padding-left: 10px;
+					padding-right: 20px;
+				}
+				.msg {
+					padding: 0 28px;
+				}
+				.input-wrap {
+					padding: 14px 20px calc(14px + var(--safe-bottom));
+				}
+				.sheet-body, .summ-body {
+					padding-left: 26px;
+					padding-right: 26px;
+				}
+				.icon-btn:hover {
+					color: var(--gold);
+					background: var(--gold-glow);
+				}
+				.msg-btn:hover {
+					color: var(--gold);
+					background: var(--gold-glow);
+					border-color: var(--gold-dim);
+				}
+				.send-btn:hover:not(:disabled) {
+					filter: brightness(1.08);
+				}
+				.home-new-btn:hover {
+					filter: brightness(1.08);
+				}
+				.code-copy-btn:hover {
+					color: var(--gold);
+					border-color: var(--gold-dim);
+					background: var(--gold-glow);
+				}
+				.effort-btn:hover {
+					border-color: var(--border-hi);
+				}
+				#scroll-bottom-btn:hover {
+					background: var(--surface);
+					color: var(--gold);
+				}
+				#settings-sheet, #summ-sheet {
+					left: 50%;
+					right: auto;
+					width: 100%;
+					max-width: 980px;
+					transform: translate(-50%, 100%);
+				}
+				#settings-sheet.open, #summ-sheet.open {
+					transform: translate(-50%, 0);
+				}
 			}
 		</style>
 	</head>
@@ -1274,6 +1393,12 @@
 				</div>
 				<div class="msgs" id="msgs"></div>
 				<div class="input-wrap">
+					<button id="scroll-bottom-btn" aria-label="Scroll to latest message">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="12" y1="5" x2="12" y2="19" />
+							<polyline points="18 13 12 19 6 13" />
+						</svg>
+					</button>
 					<div class="input-row">
 						<textarea class="input-field" id="input-field" placeholder="Message…" rows="1" autocomplete="off" autocorrect="on" autocapitalize="sentences" spellcheck="true"></textarea>
 						<button class="send-btn" id="send-btn" aria-label="Send">
@@ -1337,8 +1462,8 @@
 					<div class="field">
 						<label class="field-label">TEMPERATURE</label>
 						<div class="temp-row">
-							<input type="range" id="s-temp" min="0" max="2" step="0.05" value="0.85" />
-							<span class="temp-val" id="s-temp-val">0.85</span>
+							<input type="range" id="s-temp" min="0" max="2" step="0.05" value="1.00" />
+							<span class="temp-val" id="s-temp-val">1.00</span>
 						</div>
 						<span class="field-hint">Higher values yield more creative, unpredictable responses.</span>
 					</div>
@@ -1355,6 +1480,7 @@
 					<div class="field">
 						<label class="field-label">REASONING <span class="optional">(OPTIONAL)</span></label>
 						<div class="reasoning-row">
+							<button class="effort-btn" data-val="">AUTO</button>
 							<button class="effort-btn" data-val="none">OFF</button>
 							<button class="effort-btn" data-val="minimal">MIN</button>
 							<button class="effort-btn" data-val="low">LOW</button>
@@ -1362,7 +1488,7 @@
 							<button class="effort-btn" data-val="high">HIGH</button>
 							<button class="effort-btn" data-val="xhigh">MAX</button>
 						</div>
-						<span class="field-hint">Effort level — or set an exact token budget below instead.</span>
+						<span class="field-hint">AUTO sends no reasoning parameter (provider/model default). OFF explicitly disables reasoning. Or set an exact token budget below instead.</span>
 						<input type="number" class="field-input mt-6" id="s-reasoning-tokens" placeholder="Token budget (e.g. 4000) — overrides effort" min="1024" />
 						<label class="toggle-row" for="s-reasoning-exclude">
 							<span class="toggle-label">Hide reasoning from response</span>
@@ -1441,7 +1567,8 @@
 			const MIN_REASONING_TOKENS = 1024;
 			const WEEK_MS = 6 * 86400e3;
 
-			const REASONING_LABEL = '<div class="msg-reasoning-header"><span class="msg-reasoning-label">Reasoning</span><span class="msg-reasoning-chevron">▾</span></div><div class="msg-reasoning-content">';
+			const REASONING_CHEVRON_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+			const REASONING_LABEL = `<div class="msg-reasoning-header"><span class="msg-reasoning-label">Reasoning</span><span class="msg-reasoning-chevron">${REASONING_CHEVRON_SVG}</span></div><div class="msg-reasoning-content">`;
 			const REASONING_CLOSE = '</div>';
 			const TYPING_INDICATOR = '<div class="typing-ind"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
 			const EMPTY_STATE_HTML = `
@@ -1454,7 +1581,7 @@
 				apiKey: "",
 				modelId: "anthropic/claude-opus-4",
 				systemPrompt: "You are a helpful assistant.",
-				temperature: 0.85,
+				temperature: 1.0,
 				topP: 1.0,
 				provider: "",
 				noFallbacks: false,
@@ -1494,6 +1621,7 @@
 				settingsSheet: id("settings-sheet"),
 				toast: id("toast"),
 				chatTitleWrap: id("chat-title-wrap"),
+				scrollBottomBtn: id("scroll-bottom-btn"),
 			};
 
 			function serializeStore() {
@@ -1565,9 +1693,6 @@
 					.replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
 					.replace(/_([^_\n]+)_/g, "<em>$1</em>")
 					.replace(/`([^`]+)`/g, "<code>$1</code>");
-				// Always wrap in <p> tags so that single-paragraph tails and multi-paragraph
-				// stable portions produce identical DOM structure — prevents layout jumps
-				// when the stable pointer advances and content migrates from tail to stable.
 				return html
 					.split(/\n{2,}/)
 					.map((p) => (p.trim() ? `<p>${p.replace(/\n/g, "<br>")}</p>` : ""))
@@ -1586,8 +1711,6 @@
 			}
 
 			function renderMarkdown(raw) {
-				// Split on complete fenced code blocks; incomplete blocks during streaming
-				// fall through to inline rendering and re-render correctly once closed.
 				const parts = raw.split(/(```\w*[ \t]*\n[\s\S]*?```)/g);
 				return parts
 					.map((part) => {
@@ -1604,7 +1727,6 @@
 					setTimeout(() => { btn.textContent = "COPY"; }, 1600);
 				};
 
-				// Modern async clipboard API (requires HTTPS + permission)
 				if (navigator.clipboard?.writeText) {
 					navigator.clipboard.writeText(text).then(onSuccess).catch(() => execCommandCopy(text, onSuccess));
 					return;
@@ -1612,9 +1734,6 @@
 				execCommandCopy(text, onSuccess);
 			}
 
-			// Universal fallback: create an on-screen textarea, select it, and use
-			// execCommand("copy"). Must be on-screen (not left:-9999px) for iOS Safari,
-			// and must use setSelectionRange rather than select() for the same reason.
 			function execCommandCopy(text, onSuccess) {
 				const ta = document.createElement("textarea");
 				ta.value = text;
@@ -1635,22 +1754,14 @@
 				el.style.height = Math.min(el.scrollHeight, MAX_INPUT_HEIGHT) + "px";
 			}
 
-			// ── Streaming render: rAF throttling + incremental stable-tail split ──
-			// The stable portion is HTML already rendered and cached — never touched again.
-			// Only the growing tail (typically <500 chars) is re-rendered each frame.
-			// This keeps regex work and innerHTML churn proportional to *new* content,
-			// not to the total accumulated length.
 			const streamRender = {
 				rafId: null,
 				stableHtml: "",
 				stableEndIdx: 0,
 				stableReasonHtml: "",
 				stableReasonEndIdx: 0,
-				pendingContent: null,   // latest full content string, or null if nothing new
-				pendingReason: null,    // latest full reasoning string, or null if nothing new
-				userScrolled: false,
-				// Timestamp: ignore scroll events fired before this (our own programmatic scrolls)
-				_ignoreScrollBefore: 0,
+				pendingContent: null,
+				pendingReason: null,
 			};
 
 			function resetStreamRender() {
@@ -1661,31 +1772,24 @@
 				streamRender.stableReasonEndIdx = 0;
 				streamRender.pendingContent = null;
 				streamRender.pendingReason = null;
-				streamRender.userScrolled = false;
-				streamRender._ignoreScrollBefore = 0;
 			}
 
-			// Returns the furthest index we can safely cache:
-			// outside a code block AND at a paragraph boundary.
 			function getStableCutoff(raw, currentIdx) {
-				const MIN_TAIL = 400; // always keep at least 400 chars in the live tail
+				const MIN_TAIL = 400;
 				const searchBound = raw.length - MIN_TAIL;
 				if (searchBound <= currentIdx) return currentIdx;
 
-				// Walk backwards from searchBound to find a double-newline (paragraph boundary)
 				let pos = raw.lastIndexOf("\n\n", searchBound);
 				if (pos < currentIdx) return currentIdx;
 
 				const candidateEnd = pos + 2;
-				// Reject if we'd be inside an open code fence
+
 				const fences = (raw.slice(0, candidateEnd).match(/```/g) || []).length;
 				if (fences % 2 !== 0) return currentIdx;
 
 				return candidateEnd;
 			}
 
-			// Render a (possibly still-open) tail chunk. If there's an unclosed ``` we
-			// temporarily close it so the code block renders instead of raw backticks.
 			function renderTail(tail) {
 				if (!tail) return "";
 				const fences = (tail.match(/```/g) || []).length;
@@ -1701,11 +1805,10 @@
 			}
 
 			function scheduleStreamRender() {
-				if (streamRender.rafId) return; // already queued for this frame
+				if (streamRender.rafId) return;
 				streamRender.rafId = requestAnimationFrame(() => {
 					streamRender.rafId = null;
 
-					// ── render main content ──
 					if (stream.body && streamRender.pendingContent !== null) {
 						const raw = streamRender.pendingContent;
 						streamRender.pendingContent = null;
@@ -1722,7 +1825,6 @@
 							: TYPING_INDICATOR;
 					}
 
-					// ── render reasoning ──
 					if (stream.reasoning && streamRender.pendingReason !== null) {
 						const raw = streamRender.pendingReason;
 						streamRender.pendingReason = null;
@@ -1737,18 +1839,20 @@
 						stream.reasoning.innerHTML = streamRender.stableReasonHtml + renderTail(tail);
 					}
 
-					// ── smart scroll: only auto-scroll if the user hasn't scrolled up ──
-					// Stamp a short suppression window so the scroll event this assignment
-					// fires doesn't get mistaken for a user scroll and toggle userScrolled.
-					if (!streamRender.userScrolled) {
-						streamRender._ignoreScrollBefore = Date.now() + 80;
-						dom.msgs.scrollTop = dom.msgs.scrollHeight;
-					}
+					updateScrollBottomBtn();
 				});
 			}
 
 			function scrollBottom(smooth = false) {
 				dom.msgs.scrollTo({ top: dom.msgs.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+				updateScrollBottomBtn();
+			}
+
+			function updateScrollBottomBtn() {
+				const btn = dom.scrollBottomBtn;
+				if (!btn) return;
+				const dist = dom.msgs.scrollHeight - dom.msgs.scrollTop - dom.msgs.clientHeight;
+				btn.classList.toggle("visible", dist > 120);
 			}
 
 			function showToast(message, duration = 2600) {
@@ -1882,7 +1986,7 @@
 				if (!isUser && msg.alternatives && msg.alternatives.length > 1) {
 					paginationHtml = `
 						<button class="msg-btn" data-action="prev-alt">‹</button>
-						<span style="font-size: 11px; color: var(--ink-muted); align-self: center; min-width: 22px; text-align: center; font-family: monospace;">${msg.activeIdx + 1}/${msg.alternatives.length}</span>
+						<span style="font-size: 12px; color: var(--ink-muted); align-self: center; min-width: 24px; text-align: center; font-family: monospace;">${msg.activeIdx + 1}/${msg.alternatives.length}</span>
 						<button class="msg-btn" data-action="next-alt">›</button>
 					`;
 				}
@@ -1979,7 +2083,6 @@
 					scrollBottom();
 					generate();
 				} else {
-					// Assistant edit: just save, no regeneration
 					if (msg.alternatives) {
 						msg.alternatives[msg.activeIdx] = { content: text, reasoning: msg.reasoning };
 					}
@@ -2070,7 +2173,6 @@
 				const endIdx = targetIndex !== null ? targetIndex : convo.messages.length - 1;
 				const history = convo.messages.slice(0, endIdx).map(({ role, content }) => ({ role, content }));
 
-				// Combine user system prompt with conversation summary (kept separate)
 				let systemContent = settings.systemPrompt || "";
 				if (convo.summary) {
 					const base = systemContent.trimEnd();
@@ -2082,11 +2184,14 @@
 				const body = {
 					model: settings.modelId || DEFAULT_SETTINGS.modelId,
 					stream: true,
-					temperature: settings.temperature ?? 0.85,
-					top_p: settings.topP ?? 1.0,
 					messages,
 					cache_control : { type: "ephemeral" }
 				};
+
+				const temp = settings.temperature ?? 1.0;
+				const topP = settings.topP ?? 1.0;
+				if (Math.abs(temp - 1.0) > 1e-6) body.temperature = temp;
+				if (Math.abs(topP - 1.0) > 1e-6) body.top_p = topP;
 
 				if (settings.provider) {
 					body.provider = { order: [settings.provider], allow_fallbacks: !settings.noFallbacks };
@@ -2240,7 +2345,6 @@
 									}
 								}
 
-								// Queue a render — the rAF scheduler batches rapid chunks
 								streamRender.pendingContent = content;
 								if (reasoning) {
 									ensureReasoningEl();
@@ -2275,7 +2379,6 @@
 			}
 
 			function finalizeGeneration(convo, index, { content, reasoning, errored }) {
-				// Cancel any queued render frame and reset incremental state
 				if (streamRender.rafId) { cancelAnimationFrame(streamRender.rafId); streamRender.rafId = null; }
 				const fallback = errored ? "[Error — check your API key and model ID]" : "[No response]";
 				const finalContent = content || fallback;
@@ -2307,7 +2410,7 @@
 				setSendBtnState("send");
 				updateSendBtn();
 				renderMessages();
-				scrollBottom();
+				updateScrollBottomBtn();
 				renderHome();
 			}
 
@@ -2465,7 +2568,6 @@
 				id("summarise-convo-btn").disabled = !hasConvo;
 			}
 
-			// ── Summarise ──────────────────────────────────────────────────────
 			const DEFAULT_SUMM_PROMPT =
 				`Please create a detailed summary of this conversation to use as context in future sessions. Cover:\n- The main topics, questions, and goals discussed\n- Key decisions, conclusions, and answers reached\n- Important facts, code, or technical details mentioned\n- Anything a future session would need to continue seamlessly\n\nBe thorough but concise. Write in third person as context for an AI assistant.`;
 
@@ -2514,7 +2616,6 @@
 					.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
 					.join("\n\n");
 
-				// If a prior summary exists, include it so the new one consolidates everything
 				const userContent = convo.summary
 					? `Previous summary (incorporate and update this with the new conversation below):\n---\n${convo.summary}\n---\n\nNew conversation to integrate:\n---\n${convoText}`
 					: convoText;
@@ -2591,10 +2692,8 @@
 				const summaryText = id("summ-result-textarea").value.trim();
 				if (!summaryText) return;
 
-				// Keep last 2 messages
 				convo.messages = convo.messages.slice(-2);
 
-				// Store as a dedicated per-conversation field — replaces any previous summary
 				convo.summary = summaryText;
 
 				convo.updatedAt = Date.now();
@@ -2648,14 +2747,8 @@
 
 			function wireEvents() {
 				id("summarise-convo-btn").addEventListener("click", openSummary);
-				// Smart scroll: pause auto-scroll when user scrolls up; resume when they
-				// scroll back near the bottom. Ignores events from our own scrollTop writes.
-				dom.msgs.addEventListener("scroll", () => {
-					if (Date.now() < streamRender._ignoreScrollBefore) return;
-					if (!stream.active) return;
-					const dist = dom.msgs.scrollHeight - dom.msgs.scrollTop - dom.msgs.clientHeight;
-					streamRender.userScrolled = dist > 80;
-				}, { passive: true });
+				dom.msgs.addEventListener("scroll", updateScrollBottomBtn, { passive: true });
+				id("scroll-bottom-btn").addEventListener("click", () => scrollBottom(true));
 
 				id("new-btn").addEventListener("click", newConvo);
 				id("home-settings-btn").addEventListener("click", openSettings);
@@ -2691,7 +2784,6 @@
 				});
 
 				dom.msgs.addEventListener("click", (event) => {
-					// Code block copy button
 					const copyBtn = event.target.closest(".code-copy-btn");
 					if (copyBtn) {
 						const codeEl = copyBtn.closest(".code-block")?.querySelector("code");
@@ -2733,7 +2825,7 @@
 					btn.addEventListener("click", () => {
 						selectedEffort = btn.dataset.val;
 						syncEffortButtons();
-						if (selectedEffort) id("s-reasoning-tokens").value = "";
+						id("s-reasoning-tokens").value = "";
 					});
 				});
 
