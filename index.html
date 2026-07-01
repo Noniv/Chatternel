@@ -407,6 +407,7 @@
 			.msg-body {
 				font-size: 16px;
 				line-height: 1.65;
+				transition: min-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 			}
 			.msg.user .msg-body {
 				color: #b8cdd6;
@@ -1855,6 +1856,34 @@
 				btn.classList.toggle("visible", dist > 120);
 			}
 
+			function nearBottom(threshold = 80) {
+				return dom.msgs.scrollHeight - dom.msgs.scrollTop - dom.msgs.clientHeight < threshold;
+			}
+
+			// Scrolls so `anchorEl` sits near the top of the messages pane,
+			// instead of scrolling to the bottom of the (possibly still tiny)
+			// content. Used once when a generation starts: the user's message
+			// settles near the top and the reply streams into the open space
+			// below it — no artificial min-height needed, and nothing forces
+			// the view to keep following the content as it grows.
+			function scrollAnchorToTop(anchorEl, offset = 10) {
+				if (!anchorEl) return;
+				const containerTop = dom.msgs.getBoundingClientRect().top;
+				const anchorTop = anchorEl.getBoundingClientRect().top;
+				const delta = anchorTop - containerTop - offset;
+				dom.msgs.scrollTo({ top: dom.msgs.scrollTop + delta, behavior: "smooth" });
+			}
+
+			// How much real viewport space will be left below `targetEl` once
+			// `anchorEl` is scrolled to the top (offset px down). The gap between
+			// the two elements is scroll-position-independent, so this works
+			// whether or not the scroll has actually happened yet.
+			function computeAvailableSpace(anchorEl, targetEl, offset = 10) {
+				if (!anchorEl || !targetEl) return 0;
+				const gap = targetEl.getBoundingClientRect().top - anchorEl.getBoundingClientRect().top;
+				return Math.max(0, dom.msgs.clientHeight - offset - gap);
+			}
+
 			function showToast(message, duration = 2600) {
 				dom.toast.textContent = message;
 				dom.toast.classList.add("show");
@@ -2080,7 +2109,6 @@
 					convo.messages = convo.messages.slice(0, index + 1);
 					persist();
 					renderMessages();
-					scrollBottom();
 					generate();
 				} else {
 					if (msg.alternatives) {
@@ -2154,7 +2182,6 @@
 				autoResize(dom.inputField);
 				updateSendBtn();
 				renderMessages();
-				scrollBottom();
 				generate();
 			}
 
@@ -2402,6 +2429,10 @@
 					}
 				}
 
+				const wasNearBottom = nearBottom();
+				const bodyEl = stream.body;
+				const hadReserve = bodyEl && parseFloat(bodyEl.style.minHeight || "0") > 0;
+
 				stream.active = false;
 				stream.controller = null;
 				stream.body = null;
@@ -2409,10 +2440,39 @@
 
 				setSendBtnState("send");
 				updateSendBtn();
-				renderMessages();
-				updateScrollBottomBtn();
 				renderHome();
+
+				const finishScroll = () => {
+					if (wasNearBottom) scrollBottom();
+					else updateScrollBottomBtn();
+				};
+
+				if (hadReserve) {
+					// Show the true final content immediately, then let the
+					// reserved space collapse smoothly. We deliberately do NOT
+					// call renderMessages() here once the animation ends: the
+					// live DOM already shows the exact final content, so a full
+					// rebuild would only replace every message's node for no
+					// visual gain — and since .msg has a mount-in animation,
+					// that rebuild replays it across the whole conversation,
+					// producing a visible "blink". Just drop the now-inert
+					// inline min-height and settle the scroll instead.
+					bodyEl.innerHTML = renderMarkdown(finalContent);
+					bodyEl.style.minHeight = "0px";
+					setTimeout(() => {
+						// A newer generation may have already replaced this
+						// element (e.g. the user sent another message right
+						// away) — skip touching it in that case.
+						if (!bodyEl.isConnected) return;
+						bodyEl.style.minHeight = "";
+						finishScroll();
+					}, 470);
+				} else {
+					renderMessages();
+					finishScroll();
+				}
 			}
+
 
 			async function generate(targetIndex = null) {
 				if (stream.active) return;
@@ -2446,11 +2506,19 @@
 				persist();
 
 				renderMessages();
-				scrollBottom();
 
 				const msgEl = getMsgEl(index);
 				const bodyEl = msgEl.querySelector(".msg-body");
 				bodyEl.innerHTML = TYPING_INDICATOR;
+
+				// Pin the user message this reply is answering to the top of the
+				// view (once), and reserve whatever real screen space is left
+				// below it for the reply to fill as it streams in. No forced
+				// auto-follow while it streams — see scheduleStreamRender.
+				const anchorEl = getMsgEl(index - 1) || msgEl;
+				const reserve = computeAvailableSpace(anchorEl, bodyEl);
+				if (reserve > 40) bodyEl.style.minHeight = reserve + "px";
+				scrollAnchorToTop(anchorEl);
 
 				stream.body = bodyEl;
 				stream.reasoning = null;
@@ -2808,7 +2876,7 @@
 					updateSendBtn();
 				});
 				dom.inputField.addEventListener("keydown", (event) => {
-					if (event.key === "Enter" && !event.shiftKey && !("ontouchstart" in window)) {
+					if (event.key === "Enter" && !event.shiftKey) {
 						event.preventDefault();
 						sendMessage();
 					}
