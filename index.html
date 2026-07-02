@@ -565,8 +565,40 @@
 			.msg-reasoning.collapsed .msg-reasoning-content {
 				display: none;
 			}
-			.msg-reasoning.streaming .msg-reasoning-header {
-				cursor: default;
+			.msg-reasoning.streaming.collapsed .msg-reasoning-label {
+				background: linear-gradient(90deg,
+					var(--ink-muted) 0%,
+					var(--ink-muted) 25%,
+					var(--ink) 50%,
+					var(--ink-muted) 75%,
+					var(--ink-muted) 100%);
+				background-size: 250% 100%;
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+				opacity: 1;
+				animation: reasoningShimmer 2.6s linear infinite;
+			}
+			.msg-reasoning.streaming.collapsed .msg-reasoning-chevron {
+				animation: reasoningPulse 2.6s linear infinite;
+			}
+			@keyframes reasoningShimmer {
+				0% { background-position: 150% 0; }
+				100% { background-position: -150% 0; }
+			}
+			@keyframes reasoningPulse {
+				0%, 25% { opacity: 0.5; }
+				50% { opacity: 1; }
+				75%, 100% { opacity: 0.5; }
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.msg-reasoning.streaming.collapsed .msg-reasoning-label {
+					animation: none;
+					color: var(--ink);
+				}
+				.msg-reasoning.streaming.collapsed .msg-reasoning-chevron {
+					animation: none;
+				}
 			}
 
 			.msg-edit-box {
@@ -1498,7 +1530,7 @@
 								<div class="toggle-track"><div class="toggle-thumb"></div></div>
 							</div>
 						</label>
-						<span class="field-hint mt-neg-4">When off, the model's reasoning is shown above the reply. When on, reasoning is excluded from the API response entirely.</span>
+						<span class="field-hint mt-neg-4">When off, the model's reasoning is shown above the reply, collapsed by default (click to expand). When on, reasoning is excluded from the API response entirely.</span>
 					</div>
 
 					<button class="btn btn-gold btn-full" id="save-settings-btn">SAVE SETTINGS</button>
@@ -1604,6 +1636,7 @@
 				controller: null,
 				body: null,
 				reasoning: null,
+				reasoningDone: false,
 			};
 
 			let selectedEffort = "";
@@ -1862,12 +1895,6 @@
 				return dom.msgs.scrollHeight - dom.msgs.scrollTop - dom.msgs.clientHeight < threshold;
 			}
 
-			// Scrolls so `anchorEl` sits near the top of the messages pane,
-			// instead of scrolling to the bottom of the (possibly still tiny)
-			// content. Used once when a generation starts: the user's message
-			// settles near the top and the reply streams into the open space
-			// below it — no artificial min-height needed, and nothing forces
-			// the view to keep following the content as it grows.
 			function scrollAnchorToTop(anchorEl, offset = 10) {
 				if (!anchorEl) return;
 				const containerTop = dom.msgs.getBoundingClientRect().top;
@@ -1876,10 +1903,6 @@
 				dom.msgs.scrollTo({ top: dom.msgs.scrollTop + delta, behavior: "smooth" });
 			}
 
-			// How much real viewport space will be left below `targetEl` once
-			// `anchorEl` is scrolled to the top (offset px down). The gap between
-			// the two elements is scroll-position-independent, so this works
-			// whether or not the scroll has actually happened yet.
 			function computeAvailableSpace(anchorEl, targetEl, offset = 10) {
 				if (!anchorEl || !targetEl) return 0;
 				const gap = targetEl.getBoundingClientRect().top - anchorEl.getBoundingClientRect().top;
@@ -2245,11 +2268,20 @@
 				let reasoningEl = msgEl.querySelector(".msg-reasoning");
 				if (!reasoningEl) {
 					reasoningEl = document.createElement("div");
-					reasoningEl.className = "msg-reasoning streaming";
+					reasoningEl.className = "msg-reasoning streaming collapsed";
 					reasoningEl.innerHTML = REASONING_LABEL + REASONING_CLOSE;
 					msgEl.insertBefore(reasoningEl, bodyEl);
 				}
 				stream.reasoning = reasoningEl.querySelector(".msg-reasoning-content");
+			}
+
+			function markReasoningDone() {
+				if (stream.reasoningDone) return;
+				stream.reasoningDone = true;
+				if (stream.reasoning) {
+					const reasoningEl = stream.reasoning.closest(".msg-reasoning");
+					if (reasoningEl) reasoningEl.classList.remove("streaming");
+				}
 			}
 
 			function parseStreamLine(line) {
@@ -2379,6 +2411,7 @@
 									ensureReasoningEl();
 									streamRender.pendingReason = reasoning;
 								}
+								if (!insideThink && content) markReasoningDone();
 								scheduleStreamRender();
 							}
 						}
@@ -2396,6 +2429,7 @@
 							ensureReasoningEl();
 							if (stream.reasoning) stream.reasoning.innerHTML = renderMarkdown(reasoning);
 						}
+						if (!insideThink && content) markReasoningDone();
 					}
 				} catch (err) {
 					if (err.name !== "AbortError") {
@@ -2450,21 +2484,9 @@
 				};
 
 				if (hadReserve) {
-					// Show the true final content immediately, then let the
-					// reserved space collapse smoothly. We deliberately do NOT
-					// call renderMessages() here once the animation ends: the
-					// live DOM already shows the exact final content, so a full
-					// rebuild would only replace every message's node for no
-					// visual gain — and since .msg has a mount-in animation,
-					// that rebuild replays it across the whole conversation,
-					// producing a visible "blink". Just drop the now-inert
-					// inline min-height and settle the scroll instead.
 					bodyEl.innerHTML = renderMarkdown(finalContent);
 					bodyEl.style.minHeight = "0px";
 					setTimeout(() => {
-						// A newer generation may have already replaced this
-						// element (e.g. the user sent another message right
-						// away) — skip touching it in that case.
 						if (!bodyEl.isConnected) return;
 						bodyEl.style.minHeight = "";
 						finishScroll();
@@ -2513,10 +2535,6 @@
 				const bodyEl = msgEl.querySelector(".msg-body");
 				bodyEl.innerHTML = TYPING_INDICATOR;
 
-				// Pin the user message this reply is answering to the top of the
-				// view (once), and reserve whatever real screen space is left
-				// below it for the reply to fill as it streams in. No forced
-				// auto-follow while it streams — see scheduleStreamRender.
 				const anchorEl = getMsgEl(index - 1) || msgEl;
 				const reserve = computeAvailableSpace(anchorEl, bodyEl);
 				if (reserve > 40) bodyEl.style.minHeight = reserve + "px";
@@ -2524,6 +2542,7 @@
 
 				stream.body = bodyEl;
 				stream.reasoning = null;
+				stream.reasoningDone = false;
 
 				const result = await streamCompletion(buildRequestBody(convo, targetIndex !== null ? index : null));
 				finalizeGeneration(convo, index, result);
@@ -2867,7 +2886,7 @@
 					const reasoningHeader = event.target.closest(".msg-reasoning-header");
 					if (reasoningHeader) {
 						const reasoningEl = reasoningHeader.closest(".msg-reasoning");
-						if (reasoningEl && !reasoningEl.classList.contains("streaming")) reasoningEl.classList.toggle("collapsed");
+						if (reasoningEl) reasoningEl.classList.toggle("collapsed");
 						return;
 					}
 					const btn = event.target.closest("[data-action]");
