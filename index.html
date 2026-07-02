@@ -1523,8 +1523,10 @@
 				<div class="summ-body">
 					<!-- Step 1: configure prompt -->
 					<div class="summ-step active" id="summ-step-1">
-						<p class="summ-hint">A summary will be generated using the instruction below. If a previous summary exists it will be passed as context so the new one incorporates everything. The conversation will be condensed to its last 2 messages.</p>
+						<p class="summ-hint">A summary will be generated using the instruction below. If a previous summary exists it will be passed as context so the new one incorporates everything.</p>
 						<textarea class="summ-textarea" id="summ-prompt-textarea" rows="8" spellcheck="true"></textarea>
+						<label class="summ-hint" for="summ-keep-input" style="display:block;margin-top:10px;">Messages to keep after summarising</label>
+						<input type="number" class="summ-textarea" id="summ-keep-input" min="0" max="50" step="1" value="2" style="height:auto;padding:8px 10px;" />
 						<div class="summ-actions">
 							<button class="btn btn-ghost" id="summ-cancel-btn" style="flex:1">CANCEL</button>
 							<button class="btn btn-gold" id="summ-generate-btn" style="flex:2">GENERATE SUMMARY →</button>
@@ -2647,6 +2649,7 @@
 				closeSettings();
 				id("summ-prompt-textarea").value = DEFAULT_SUMM_PROMPT;
 				id("summ-result-textarea").value = "";
+				id("summ-keep-input").value = 2;
 				showSummStep(1);
 				id("summ-mask").classList.add("open");
 				id("summ-sheet").classList.add("open");
@@ -2760,7 +2763,9 @@
 				const summaryText = id("summ-result-textarea").value.trim();
 				if (!summaryText) return;
 
-				convo.messages = convo.messages.slice(-2);
+				let keepCount = parseInt(id("summ-keep-input").value, 10);
+				if (isNaN(keepCount) || keepCount < 0) keepCount = 0;
+				convo.messages = keepCount > 0 ? convo.messages.slice(-keepCount) : [];
 
 				convo.summary = summaryText;
 
