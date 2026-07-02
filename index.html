@@ -2253,7 +2253,6 @@
 				const hasTokens = settings.reasoningTokens && tokens >= MIN_REASONING_TOKENS;
 				if (settings.reasoningEffort || hasTokens) {
 					body.reasoning = hasTokens ? { max_tokens: tokens } : { effort: settings.reasoningEffort };
-					if (settings.reasoningExclude) body.reasoning.exclude = true;
 				}
 				return body;
 			}
